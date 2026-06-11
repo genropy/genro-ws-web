@@ -1,0 +1,53 @@
+# Copyright 2025 Softwell S.r.l.
+# Licensed under the Apache License, Version 2.0
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "genro-ws-web"
+version = "0.0.0"
+description = "WebSocket-driven reactive SPA framework in pure Python, on genro-builders + genro-asgi"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [
+    {name = "Genropy Team"}
+]
+keywords = [
+    "spa",
+    "reactive",
+    "websocket",
+    "server-driven",
+    "genro",
+    "genropy",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+# Pre-Alpha: documentation and architecture only, no implementation code yet.
+# The intended runtime dependencies (genro-builders, genro-asgi) are declared
+# when the first code lands.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/genropy/genro-ws-web"
+Repository = "https://github.com/genropy/genro-ws-web"
