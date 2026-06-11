@@ -34,6 +34,10 @@ def main() -> None:
         "--page", default="colorpicker", help="Page to open (default: colorpicker)",
     )
     parser.add_argument(
+        "--instance", default="",
+        help="Legacy GenroPy instance to wire (enables the db pages).",
+    )
+    parser.add_argument(
         "--open", action="store_true",
         help="Open the page in the default browser after start.",
     )
@@ -42,7 +46,7 @@ def main() -> None:
     from genro_asgi import AsgiServer
 
     server = AsgiServer(host=args.host, port=args.port)
-    server.mount(MOUNT_NAME, WsLiveApp())
+    server.mount(MOUNT_NAME, WsLiveApp(instance=args.instance))
 
     url = f"http://{args.host}:{args.port}/{MOUNT_NAME}/page/{args.page}"
     print(f"genro-ws-live serving on {url}")

@@ -28,9 +28,25 @@ class _NodeAccessor:
 class WsLivePage(HtmlBuilder):
     """HtmlBuilder for live content. Subclass and override ``main``."""
 
+    #: a page that needs the legacy db declares it: the app drops it
+    #: from the registry when no instance is configured.
+    requires_db = False
+
     def set_data(self, path: str, value: Any) -> None:
         """Shortcut for ``self.data.set_item(path, value)``."""
         self.data.set_item(path, value)
+
+    @property
+    def application(self) -> Any:
+        """The application this page's handler is mounted on."""
+        return self.handler.application
+
+    @property
+    def db(self) -> Any:
+        """The legacy instance db (via the application). Access it
+        inside ``with self.application.db_access():`` — the connection
+        is shared and must be closed on every exit path."""
+        return self.application.db
 
     @property
     def node(self) -> _NodeAccessor:

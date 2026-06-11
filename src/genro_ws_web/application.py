@@ -26,6 +26,8 @@ server-initiated reactivity end to end.
 from __future__ import annotations
 
 import asyncio
+import threading
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +43,11 @@ from . import demo
 from .startup_page import STARTUP_HTML
 from .target import WsTargetWrapper
 
+try:
+    from gnr.app.gnrapp import GnrApp
+except ImportError:
+    GnrApp = None
+
 _PACKAGE_DIR = Path(__file__).parent
 
 
@@ -48,14 +55,62 @@ class WsLiveApp(AsgiApplication):
     """Server-side reactive SPA over WSX, one HtmlBuilder per page."""
 
     def __init__(self, **kwargs: Any) -> None:
-        """Wire ``base_dir`` to the package directory by default."""
+        """Wire ``base_dir`` to the package directory by default.
+
+        ``instance`` names a legacy GenroPy instance: the app loads it
+        once per process and shares its db with the pages (§7 of the
+        legacy-alignment track).
+        """
+        self.instance_name: str = kwargs.pop("instance", "")
         kwargs.setdefault("base_dir", _PACKAGE_DIR)
         super().__init__(**kwargs)
 
     def on_init(self, **kwargs: Any) -> None:
-        """Discover the pages once: ``{key: (title, PageClass)}``."""
-        self.pages = demo.discover()
+        """Wire the legacy instance (if any) and discover the pages.
+
+        ``GnrApp`` is instantiated ONCE here — it loads the instance's
+        whole model and owns the single shared db connection. Pages
+        that declare ``requires_db`` are dropped when no instance is
+        configured.
+        """
+        self.gnrapp: Any = None
+        self.db: Any = None
+        self._db_lock = threading.Lock()
+        if self.instance_name:
+            if GnrApp is None:
+                raise RuntimeError(
+                    "an instance was requested but the legacy genropy "
+                    "package is not installed",
+                )
+            self.gnrapp = GnrApp(self.instance_name)
+            self.db = self.gnrapp.db
+        pages = demo.discover()
+        if self.db is None:
+            pages = {
+                key: entry for key, entry in pages.items()
+                if not getattr(entry[1], "requires_db", False)
+            }
+        self.pages = pages
         self.loop: asyncio.AbstractEventLoop | None = None
+
+    @contextmanager
+    def db_access(self) -> Any:
+        """Serialized access to the shared legacy connection.
+
+        The legacy connection is unique per process and NOT
+        thread-safe, and our routes run in worker threads: the lock
+        serializes the access, the ``finally`` closes the connection
+        on EVERY exit path (an open one stays idle-in-transaction and
+        blocks the next user). Side writes go through ``deferToCommit``,
+        never a direct ``commit()``.
+        """
+        if self.db is None:
+            raise RuntimeError("db_access() without a legacy instance")
+        with self._db_lock:
+            try:
+                yield self.db
+            finally:
+                self.db.closeConnection()
 
     def on_startup(self) -> None:
         """Capture the server's event loop (lifespan runs inside it).
