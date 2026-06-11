@@ -13,8 +13,8 @@ STARTUP_HTML = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <title>%(title)s</title>
-<link rel="stylesheet" href="../static?file=ws_live.css">
-<script src="../static?file=genro.js"></script>
+<link rel="stylesheet" href="../static?file=ws_live.css&v=%(v)s">
+<script src="../static?file=genro.js&v=%(v)s"></script>
 <script>var genro = new GenroClient({page: "%(page)s"});</script>
 </head>
 <body data-gnr-status="loading">

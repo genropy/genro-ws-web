@@ -30,6 +30,7 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from genro_asgi import AsgiApplication
 from genro_asgi.exceptions import Redirect
@@ -99,6 +100,10 @@ class WsLiveApp(AsgiApplication):
             }
         self.pages = pages
         self.loop: asyncio.AbstractEventLoop | None = None
+        # Cache-buster for the client resources: changes at every
+        # process start, so a restarted server never serves a page
+        # that keeps a stale genro.js from the browser cache.
+        self.client_version = uuid4().hex[:8]
 
     @contextmanager
     def db_access(self, connection: Any = None) -> Any:
@@ -210,14 +215,18 @@ class WsLiveApp(AsgiApplication):
         """
         key = args[0] if args else self.default_page()
         title, _ = self.pages[key]
-        return STARTUP_HTML % {"page": key, "title": title}
+        return STARTUP_HTML % {
+            "page": key, "title": title, "v": self.client_version,
+        }
 
     @route()
-    def static(self, file: str = "") -> Path:
+    def static(self, file: str = "", v: str = "") -> Path:
         """Serve a static resource (JS, CSS) from ``resources/``.
 
         Returns a ``Path``; ``set_result`` detects the mime type from the
-        suffix. Raises on missing file or empty parameter.
+        suffix. Raises on missing file or empty parameter. ``v`` is the
+        cache-buster carried by the startup links — unused here, it only
+        makes the URL change at every server start.
         """
         if not file:
             raise ValueError("file parameter required")
