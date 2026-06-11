@@ -47,6 +47,10 @@ def main() -> None:
 
     server = AsgiServer(host=args.host, port=args.port)
     server.mount(MOUNT_NAME, WsLiveApp(instance=args.instance))
+    # The server root redirects to the main app (the same assignment
+    # AsgiServer.__init__ does for config-declared apps; programmatic
+    # mounts happen after init, so the convention is applied here).
+    server.config._opts["main_app"] = MOUNT_NAME
 
     url = f"http://{args.host}:{args.port}/{MOUNT_NAME}/page/{args.page}"
     print(f"genro-ws-live serving on {url}")

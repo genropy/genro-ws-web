@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any
 
 from genro_asgi import AsgiApplication
+from genro_asgi.exceptions import Redirect
 from genro_asgi.request import get_current_request
 from genro_asgi.websocket import WebSocketState
 from genro_routes import route
@@ -189,6 +190,16 @@ class WsLiveApp(AsgiApplication):
         if "index" in self.pages:
             return "index"
         return next(iter(self.pages))
+
+    @route(meta_mime_type="text/html")
+    def index(self) -> str:
+        """The app's root lands on the live index page.
+
+        Overrides the AsgiApplication splash: ``/<mount>/`` redirects
+        to ``/<mount>/page/`` (the default page), so the relative
+        resource links of the startup skeleton keep their base.
+        """
+        raise Redirect(f"/{self.mount_name}/page/")
 
     @route(meta_mime_type="text/html")
     def page(self, *args: str) -> str:
