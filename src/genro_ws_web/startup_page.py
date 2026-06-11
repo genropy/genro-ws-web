@@ -10,7 +10,8 @@ The Source tab is an iframe on the ``source`` route, loaded lazily on
 first activation.
 
 ``SOURCE_HTML`` is the document that route serves: the page module's
-Python, escaped, in a ``<pre>``.
+Python, escaped, in a read-only CodeMirror (CDN); the bare textarea
+is the graceful degradation when the CDN is unreachable.
 """
 from __future__ import annotations
 
@@ -59,9 +60,25 @@ SOURCE_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <title>%(title)s — source</title>
 <link rel="stylesheet" href="static?file=ws_live.css&v=%(v)s">
+<link rel="stylesheet"
+ href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<script
+ src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script
+ src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
 </head>
 <body class="source-view">
-<pre>%(code)s</pre>
+<textarea id="code" readonly>%(code)s</textarea>
+<script>
+if (window.CodeMirror) {
+  CodeMirror.fromTextArea(document.getElementById("code"), {
+    mode: "python",
+    readOnly: true,
+    lineNumbers: true,
+    viewportMargin: Infinity,
+  });
+}
+</script>
 </body>
 </html>
 """
