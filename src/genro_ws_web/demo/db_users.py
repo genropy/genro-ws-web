@@ -25,7 +25,7 @@ class Page(WsLivePage):
     requires_db = True
 
     def main(self, root):
-        with self.application.db_access() as db:
+        with self.db_access() as db:
             rows = db.table("adm.user").query(
                 columns="username,email", order_by="$username", limit=20,
             ).fetch()

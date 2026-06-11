@@ -40,6 +40,7 @@ from genro_tytx.utils import raw_decode
 from genro_builders.builder import BuilderHandler
 
 from . import demo
+from .connection import WsConnection
 from .startup_page import STARTUP_HTML
 from .target import WsTargetWrapper
 
@@ -75,7 +76,6 @@ class WsLiveApp(AsgiApplication):
         """
         self.gnrapp: Any = None
         self.db: Any = None
-        self._db_lock = threading.Lock()
         if self.instance_name:
             if GnrApp is None:
                 raise RuntimeError(
@@ -84,6 +84,12 @@ class WsLiveApp(AsgiApplication):
                 )
             self.gnrapp = GnrApp(self.instance_name)
             self.db = self.gnrapp.db
+            if self.db.implementation != "postgres":
+                raise NotImplementedError(
+                    "the db exit guard probes postgres for assigned "
+                    f"xids; implementation {self.db.implementation!r} "
+                    "is not supported yet",
+                )
         pages = demo.discover()
         if self.db is None:
             pages = {
@@ -94,23 +100,75 @@ class WsLiveApp(AsgiApplication):
         self.loop: asyncio.AbstractEventLoop | None = None
 
     @contextmanager
-    def db_access(self) -> Any:
-        """Serialized access to the shared legacy connection.
+    def db_access(self, connection: Any = None) -> Any:
+        """One unit of db work — the db leg of a page command.
 
-        The legacy connection is unique per process and NOT
-        thread-safe, and our routes run in worker threads: the lock
-        serializes the access, the ``finally`` closes the connection
-        on EVERY exit path (an open one stays idle-in-transaction and
-        blocks the next user). Side writes go through ``deferToCommit``,
-        never a direct ``commit()``.
+        The legacy layer pools connections PER THREAD and keys
+        ``currentEnv`` by thread id; our commands run on recycled
+        worker threads. So the env belongs to the BLOCK, not the
+        thread: written on entry from the connection's identity,
+        cleared on exit — an env left behind would sign one user's
+        write with another user's name.
+
+        COMMIT IS THE AUTHOR'S DUTY (the legacy contract: the command
+        ends with ``db.commit()``). The exit guards only make the
+        violations loud, one by one — writes on an anonymous
+        connection, writes left uncommitted — and the close rolls
+        back whatever was not committed. Side writes ride
+        ``deferToCommit``, never a direct ``commit()``.
         """
         if self.db is None:
             raise RuntimeError("db_access() without a legacy instance")
-        with self._db_lock:
-            try:
-                yield self.db
-            finally:
-                self.db.closeConnection()
+        if connection is not None:
+            self.db.updateEnv(**connection.db_env())
+        try:
+            yield self.db
+            self._db_exit_guards(connection)
+        finally:
+            self.db.closeConnection()
+            self.db.clearCurrentEnv()
+
+    def _db_exit_guards(self, connection: Any) -> None:
+        """Loud seams at block exit: each violation fails alone.
+
+        The write signal comes from postgres itself: a transaction is
+        assigned a xid ONLY when it writes
+        (``pg_current_xact_id_if_assigned``), reads never trip the
+        guard. The probe runs on every still-uncommitted connection of
+        this thread (``commit()`` marks the committed ones) — so a
+        write left pending is caught whoever made it.
+
+        Backstop, not the gate: a write the author DID commit on an
+        anonymous connection is beyond reach here (its transaction is
+        gone) — gating anonymous connections upstream is the asgi auth
+        middleware's job.
+        """
+        thread_connections = self.db._connections.get(
+            threading.get_ident(), {},
+        )
+        dirty = [
+            c.storename for c in thread_connections.values()
+            if not c.committed and self._transaction_wrote(c)
+        ]
+        if not dirty:
+            return
+        if connection is None or connection.avatar is None:
+            raise RuntimeError(
+                "db writes on an anonymous connection (no avatar): "
+                "authentication has not landed on this connection; "
+                "the close is rolling them back",
+            )
+        raise RuntimeError(
+            "db writes left uncommitted (the command must end with "
+            f"db.commit()): stores {dirty}; the close is rolling "
+            "them back",
+        )
+
+    def _transaction_wrote(self, conn: Any) -> bool:
+        """True if ``conn``'s open transaction performed writes."""
+        cursor = self.db.adapter.cursor(conn)
+        cursor.execute("SELECT pg_current_xact_id_if_assigned()")
+        return cursor.fetchone()[0] is not None
 
     def on_startup(self) -> None:
         """Capture the server's event loop (lifespan runs inside it).
@@ -155,19 +213,27 @@ class WsLiveApp(AsgiApplication):
     # WSX — the live page (per-connection, prepared on ``main``)
     # ------------------------------------------------------------------
 
-    def _prepare(self, key: str, ws: Any) -> Any:
+    def _connection(self, ws: Any) -> WsConnection:
+        """The ``WsConnection`` of this websocket (born on first call)."""
+        if "connection" not in ws.state:
+            ws.state.connection = WsConnection(ws, self)
+        return ws.state.connection
+
+    def _prepare(self, key: str, connection: WsConnection) -> Any:
         """Instantiate and mount the page ``key`` on its own handler.
 
-        One builder per page per connection; the ``WsTargetWrapper``
-        (riding on the builder as ``ws_target``) is bound to the
-        connection so every flush pushes its patches. ``activate``
-        renders once — the full content lands in the wrapper — and arms
-        the data subscribe.
+        One builder per page per connection; the page carries its
+        ``connection`` (identity chain: page -> connection -> avatar).
+        The ``WsTargetWrapper`` (riding on the builder as ``ws_target``)
+        is bound to the connection so every flush pushes its patches.
+        ``activate`` renders once — the full content lands in the
+        wrapper — and arms the data subscribe.
         """
         title, page_class = self.pages[key]
         builder = page_class()
+        builder.connection = connection
         builder.ws_target = WsTargetWrapper(page_key=key)
-        builder.ws_target.bind(ws, self.loop)
+        builder.ws_target.bind(connection.ws, self.loop)
         builder.set_render_target(builder.ws_target)
         handler = BuilderHandler(application=self)
         handler.add_builder(builder)
@@ -176,13 +242,11 @@ class WsLiveApp(AsgiApplication):
 
     def _live_builder(self, key: str, ws: Any) -> Any:
         """Return the connection's live builder for ``key`` (lazy)."""
-        if "pages" not in ws.state:
-            ws.state.pages = {}
-        registry = ws.state.pages
-        builder = registry.get(key)
+        connection = self._connection(ws)
+        builder = connection.pages.get(key)
         if builder is None:
-            builder = self._prepare(key, ws)
-            registry[key] = builder
+            builder = self._prepare(key, connection)
+            connection.pages[key] = builder
             interval = getattr(builder, "live_interval", None)
             if interval:
                 builder._ticker_future = asyncio.run_coroutine_threadsafe(

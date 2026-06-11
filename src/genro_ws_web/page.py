@@ -32,6 +32,10 @@ class WsLivePage(HtmlBuilder):
     #: from the registry when no instance is configured.
     requires_db = False
 
+    #: the WsConnection this live page belongs to (identity chain:
+    #: page -> connection -> avatar). None on headless renders.
+    connection = None
+
     def set_data(self, path: str, value: Any) -> None:
         """Shortcut for ``self.data.set_item(path, value)``."""
         self.data.set_item(path, value)
@@ -41,12 +45,15 @@ class WsLivePage(HtmlBuilder):
         """The application this page's handler is mounted on."""
         return self.handler.application
 
-    @property
-    def db(self) -> Any:
-        """The legacy instance db (via the application). Access it
-        inside ``with self.application.db_access():`` — the connection
-        is shared and must be closed on every exit path."""
-        return self.application.db
+    def db_access(self) -> Any:
+        """The page's db unit of work: ``with self.db_access() as db:``.
+
+        Rides the application's command cycle with THIS page's
+        connection: env from the avatar in, exit guards and close out.
+        Commit is the author's duty — end your writes with
+        ``db.commit()``.
+        """
+        return self.application.db_access(connection=self.connection)
 
     @property
     def node(self) -> _NodeAccessor:
