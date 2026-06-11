@@ -17,10 +17,11 @@ class GenroClient {
     this.pending = {};
     this.nextId = 1;
     this.ws = null;
-    // Served at /<mount>/page/<key>: the WSX prefix is everything up to
-    // and including the mount (drop "page/<key>").
-    var parts = location.pathname.replace(/\/+$/, "").split("/");
-    this.wsPrefix = parts.slice(0, -2).join("/") + "/";
+    // Served at /<mount>/page/<key>: the WSX prefix is everything
+    // before the last "/page" segment — the key may be absent
+    // (/<mount>/page/ serves the default page).
+    var m = location.pathname.match(/^(.*)\/page(?:\/.*)?$/);
+    this.wsPrefix = (m ? m[1] : "") + "/";
     this.ops = {
       // Replace applies BY DIFFERENCE (morph): the existing DOM is
       // updated in place, matched elements survive as objects — an

@@ -184,6 +184,12 @@ class WsLiveApp(AsgiApplication):
     # HTTP — the startup page (one fixed skeleton for every page)
     # ------------------------------------------------------------------
 
+    def default_page(self) -> str:
+        """The key served without an explicit one: ``index`` if present."""
+        if "index" in self.pages:
+            return "index"
+        return next(iter(self.pages))
+
     @route(meta_mime_type="text/html")
     def page(self, *args: str) -> str:
         """Serve the startup skeleton. ``/<app>/page/<key>``.
@@ -191,7 +197,7 @@ class WsLiveApp(AsgiApplication):
         Always the same document: the page key only parameterizes the
         client bootstrap; the content arrives later over the websocket.
         """
-        key = args[0] if args else next(iter(self.pages))
+        key = args[0] if args else self.default_page()
         title, _ = self.pages[key]
         return STARTUP_HTML % {"page": key, "title": title}
 
@@ -257,7 +263,7 @@ class WsLiveApp(AsgiApplication):
     @route()
     def main(self, page: str = "") -> dict[str, Any]:
         """First client call: the rendered HTML of the main div."""
-        key = page or next(iter(self.pages))
+        key = page or self.default_page()
         ws = get_current_request().websocket
         builder = self._live_builder(key, ws)
         return {"html": builder.ws_target.last_full}

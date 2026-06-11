@@ -31,7 +31,7 @@ def main() -> None:
         "--port", type=int, default=8000, help="Bind port (default: 8000)",
     )
     parser.add_argument(
-        "--page", default="colorpicker", help="Page to open (default: colorpicker)",
+        "--page", default="index", help="Page to open (default: index)",
     )
     parser.add_argument(
         "--instance", default="",
