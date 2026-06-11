@@ -54,9 +54,14 @@ class HtmlComponentsBase:
 
     def _input(self, root, html_type, value=None, dtype=None, ghost=None,
                **attrs):
-        """Shared input emission: data-dtype + ghost->placeholder."""
+        """Shared input emission: dtype on the NODE + ghost->placeholder.
+
+        ``dtype`` is a retained attribute: the mutation resolves the
+        node by identity and types the value THERE — the DOM never
+        carries it.
+        """
         if dtype:
-            attrs["data-dtype"] = dtype
+            attrs["dtype"] = dtype
         if ghost is not None:
             attrs["placeholder"] = ghost
         root.input(html_type=html_type, value=value, **attrs)
