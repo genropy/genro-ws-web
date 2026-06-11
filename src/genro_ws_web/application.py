@@ -281,37 +281,88 @@ class WsLiveApp(AsgiApplication):
 
     @route()
     def mutate(
-        self, page: str = "", path: str = "", value: Any = None,
-        dtype: str = "",
+        self, page: str = "", id: str = "", value: Any = None,
     ) -> dict[str, Any]:
-        """Apply a data mutation to the live page.
+        """Apply a data mutation addressed by element identity.
 
-        ``dtype`` is the widget's declared type (legacy TYTX codes): the
-        write is converted before it lands, so the datastore holds the
-        DATUM, not its text. It travels as a separate parameter — an
-        in-band ``value::dtype`` suffix would be injectable from any
-        textbox. The write runs inside ``handler.live()``; the flush
-        pushes the patches over the connection (single road), so the
-        response carries only the outcome.
+        The wire carries WHO (the element id — a serial for source
+        nodes, a derived chain for expansion content) and WHAT (the
+        raw value). The server resolves the NODE and reads everything
+        there: the dtype drives the typing (TYTX), the pointer gives
+        the destination, the retained ``validate_*`` family will feed
+        the validation engine. No path and no dtype from the client:
+        arbitrary-path writes and dtype injection do not exist as
+        categories. Unknown id or non-writable node: loud refusal.
+
+        The write runs inside ``handler.live()``; the flush pushes the
+        patches over the connection (single road), so the response
+        carries only the outcome.
         """
-        if dtype:
-            value = self._typed_value(value, dtype)
         builder = self._live_builder(page, get_current_request().websocket)
+        node = self._mutation_node(builder, id)
+        path, typed = self._mutation_write(node, value)
         handler = builder.handler
         with handler.live():
-            handler.data.set_item(path, value)
+            handler.data.set_item(path, typed)
         return {"ok": True}
 
-    def _typed_value(self, value: Any, dtype: str) -> Any:
-        """Convert a client string to its declared dtype (TYTX codes).
+    def _mutation_node(self, builder: Any, element_id: str) -> Any:
+        """Resolve the element identity to its server-side node.
 
-        ``None`` passes through (an emptied field means "no datum");
-        non-strings are already typed by JSON (checkbox booleans). An
-        unknown dtype raises: the widget declared something the catalog
-        does not know.
+        Expansion content lives in the builder's writeback map
+        (derived ids); identity-bearing source nodes resolve by
+        serial. Anything else is refused.
+        """
+        if not element_id:
+            raise ValueError("mutation without an element id")
+        wmap = getattr(builder, "_writeback_map", None) or {}
+        node = wmap.get(element_id)
+        if node is not None:
+            return node
+        try:
+            return builder.node_by_target_id(element_id)
+        except KeyError:
+            raise ValueError(
+                f"unknown mutation target {element_id!r}",
+            ) from None
+
+    def _mutation_write(self, node: Any, raw_value: Any) -> tuple[str, Any]:
+        """Derive destination and typed value from the resolved node.
+
+        Three writable shapes: a ``value`` pointer (typed by the
+        node's dtype), a ``checked`` pointer (booleans arrive already
+        typed by JSON), a ``data-set-pointer`` element (pointer AND
+        value are the node's own attributes — the click carries only
+        identity). A node with none of them is not a mutation target.
+        """
+        attr = node.attr
+        if node.pointer_type(attr.get("value")):
+            path = node.abs_datapath(attr["value"])
+            return path, self._typed_value(raw_value, attr.get("dtype"))
+        if node.pointer_type(attr.get("checked")):
+            return node.abs_datapath(attr["checked"]), raw_value
+        set_pointer = attr.get("data-set-pointer")
+        if set_pointer:
+            return set_pointer, attr.get("data-set-value")
+        raise ValueError(
+            f"mutation target {attr.get('id') or node.node_tag!r} "
+            "is not writable",
+        )
+
+    def _typed_value(self, value: Any, dtype: Any) -> Any:
+        """Convert a client string to the NODE's declared dtype (TYTX).
+
+        Text dtypes don't convert (text stays text); an emptied typed
+        field means "no datum" -> ``None``; non-strings are already
+        typed by JSON (checkbox booleans). An unknown dtype raises:
+        the node declared something the catalog does not know.
         """
         if value is None or not isinstance(value, str):
             return value
+        if not dtype or dtype in ("A", "T"):
+            return value
+        if value == "":
+            return None
         decoded, typed = raw_decode(f"{value}::{dtype}")
         if not decoded:
             raise ValueError(f"unknown dtype {dtype!r}")

@@ -189,28 +189,27 @@ class GenroClient {
     main.addEventListener("click", this._clickHandler);
   }
 
-  // A click on an element carrying `data-set-pointer` writes
-  // `data-set-value` to that path: the click IS a mutation, riding the
-  // same single road as the inputs (tab strips, menus, buttons).
+  // A click on an element carrying `data-set-pointer` IS a mutation,
+  // riding the same single road as the inputs (tab strips, menus,
+  // buttons). The wire carries only the element's identity: pointer
+  // and value are the SERVER node's attributes.
   onClick(e) {
     var el = e.target.closest ? e.target.closest("[data-set-pointer]") : null;
-    if (!el) return;
-    this.setData(el.getAttribute("data-set-pointer"),
-                 el.getAttribute("data-set-value"));
+    if (!el || !el.id) return;
+    this.mutate(el.id);
   }
 
   onInput(e) {
     var el = e.target;
     if (!el || !el.matches("input, select, textarea")) return;
-    // A checkbox binds its state through `checked`, not `value` — and
-    // el.checked is already typed (boolean), no dtype on the wire.
-    var checkbox = el.type === "checkbox";
-    var path = el.getAttribute(
-      checkbox ? "data-checked-pointer" : "data-value-pointer");
-    if (!path) return;
-    var value, dtype = null;
-    if (checkbox) {
-      value = el.checked;
+    if (!el.id) return;
+    // The wire carries WHO (the element id — a serial, or the derived
+    // chain inside an expansion) and WHAT (the raw value). Path and
+    // dtype never travel: the server resolves the node by identity
+    // and reads them THERE (typing, retention, validation).
+    var value;
+    if (el.type === "checkbox") {
+      value = el.checked;                  // already typed (boolean)
     } else {
       value = el.value;
       // Text trims by default (legacy TextBox trim=true); data-trim
@@ -219,16 +218,11 @@ class GenroClient {
           && el.getAttribute("data-trim") !== "false") {
         value = value.trim();
       }
-      // The widget's declared dtype travels as a separate parameter
-      // (an in-band value::dtype suffix would be injectable from a
-      // textbox); an emptied typed field means "no datum" -> null.
-      dtype = el.getAttribute("data-dtype");
-      if (dtype && value === "") value = null;
     }
     if (this._inputTimer) clearTimeout(this._inputTimer);
     this._inputTimer = setTimeout(() => {
       this._inputTimer = null;
-      this.setData(path, value, dtype);
+      this.mutate(el.id, value);
     }, 10);
   }
 
@@ -293,9 +287,9 @@ class GenroClient {
     });
   }
 
-  setData(path, value, dtype) {
-    var params = { page: this.page, path: path, value: value };
-    if (dtype) params.dtype = dtype;
+  mutate(id, value) {
+    var params = { page: this.page, id: id };
+    if (value !== undefined) params.value = value;
     this.call("mutate", params);
   }
 }
