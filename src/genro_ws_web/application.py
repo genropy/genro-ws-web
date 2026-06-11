@@ -310,6 +310,8 @@ class WsLiveApp(AsgiApplication):
         builder = self._live_builder(page, get_current_request().websocket)
         node = self._mutation_node(builder, id)
         path, typed = self._mutation_write(node, value)
+        print(f"MUTATE page={page!r} id={id!r} raw={value!r} "
+              f"-> path={path!r} typed={typed!r}", flush=True)
         handler = builder.handler
         with handler.live():
             handler.data.set_item(path, typed)
