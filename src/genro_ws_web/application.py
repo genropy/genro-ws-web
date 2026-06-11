@@ -26,6 +26,8 @@ server-initiated reactivity end to end.
 from __future__ import annotations
 
 import asyncio
+import html
+import inspect
 import threading
 from contextlib import contextmanager
 from pathlib import Path
@@ -43,7 +45,7 @@ from genro_builders.builder import BuilderHandler
 
 from . import demo
 from .connection import WsConnection
-from .startup_page import STARTUP_HTML
+from .startup_page import SOURCE_HTML, STARTUP_HTML
 from .target import WsTargetWrapper
 
 try:
@@ -217,6 +219,26 @@ class WsLiveApp(AsgiApplication):
         title, _ = self.pages[key]
         return STARTUP_HTML % {
             "page": key, "title": title, "v": self.client_version,
+        }
+
+    @route(meta_mime_type="text/html")
+    def source(self, page: str = "") -> str:
+        """Render the Python source of a page. ``/<app>/source?page=<key>``.
+
+        The key resolves ONLY through the page registry (never a path
+        or a file from the client; unknown key = loud refusal): the
+        served text is ``inspect.getsource`` of the page's module,
+        escaped into the fixed source skeleton. This is the shell's
+        "Source" tab: every live page shows its own recipe.
+        """
+        if not page:
+            raise ValueError("page parameter required")
+        title, page_class = self.pages[page]
+        module = inspect.getmodule(page_class)
+        code = inspect.getsource(module)
+        return SOURCE_HTML % {
+            "title": title, "code": html.escape(code),
+            "v": self.client_version,
         }
 
     @route()

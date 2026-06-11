@@ -127,3 +127,48 @@ body::after {
   text-align: right;
   font-weight: 600;
 }
+
+/* Shell: the fixed tab strip of the startup skeleton — the live page
+   and its Python source (iframe on the source route, lazy). */
+.shell-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 8px 0;
+  background: #ececec;
+  border-bottom: 1px solid #c8c8c8;
+}
+.shell-tab {
+  padding: 4px 16px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  color: #555555;
+  border: 1px solid transparent;
+  border-radius: 6px 6px 0 0;
+}
+.shell-tab.active {
+  background: #ffffff;
+  color: #222222;
+  border-color: #c8c8c8;
+  border-bottom-color: #ffffff;
+  margin-bottom: -1px;
+}
+.hidden { display: none !important; }
+#sourceFrame {
+  width: 100%;
+  height: calc(100vh - 60px);
+  border: none;
+  background: #ffffff;
+}
+
+/* The source document itself (SOURCE_HTML). */
+body.source-view { padding: 0; }
+body.source-view::after { content: none; }
+body.source-view pre {
+  font-family: "SF Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+  padding: 12px 16px;
+  white-space: pre-wrap;
+}
