@@ -309,12 +309,15 @@ class WsLiveApp(AsgiApplication):
         """
         builder = self._live_builder(page, get_current_request().websocket)
         node = self._mutation_node(builder, id)
-        path, typed = self._mutation_write(node, value)
+        path, typed, fired = self._mutation_write(node, value)
         print(f"MUTATE page={page!r} id={id!r} raw={value!r} "
-              f"-> path={path!r} typed={typed!r}", flush=True)
+              f"-> path={path!r} typed={typed!r} fired={fired}", flush=True)
         handler = builder.handler
         with handler.live():
-            handler.data.set_item(path, typed)
+            if fired:
+                handler.data.set_item(path, typed, _fired=True)
+            else:
+                handler.data.set_item(path, typed)
         return {"ok": True}
 
     def _mutation_node(self, builder: Any, element_id: str) -> Any:
@@ -337,24 +340,45 @@ class WsLiveApp(AsgiApplication):
                 f"unknown mutation target {element_id!r}",
             ) from None
 
-    def _mutation_write(self, node: Any, raw_value: Any) -> tuple[str, Any]:
-        """Derive destination and typed value from the resolved node.
+    def _mutation_write(
+        self, node: Any, raw_value: Any,
+    ) -> tuple[str, Any, bool]:
+        """Derive destination, value and fired-ness from the resolved node.
 
-        Three writable shapes: a ``value`` pointer (typed by the
-        node's dtype), a ``checked`` pointer (booleans arrive already
-        typed by JSON), a ``data-set-pointer`` element (pointer AND
-        value are the node's own attributes — the click carries only
-        identity). A node with none of them is not a mutation target.
+        Four writable shapes: a ``value`` pointer (typed by the node's
+        dtype), a ``checked`` pointer (booleans arrive already typed by
+        JSON), a ``data-set-pointer`` element (pointer AND value are
+        the node's own attributes — the click carries only identity),
+        and a ``data-fire-pointer`` element — the page command: the
+        write is an EVENT (``_fired``, never persisted) whose value is
+        the message. Hybrid payload rule: a node-declared
+        ``data-fire-value`` wins (pure-identity click), otherwise the
+        client's value IS the message (untyped — a message, not a
+        datum), otherwise ``True``. A node with none of the four is
+        not a mutation target; declaring both set and fire on one node
+        is an authoring error.
         """
         attr = node.attr
         if node.pointer_type(attr.get("value")):
             path = node.abs_datapath(attr["value"])
-            return path, self._typed_value(raw_value, attr.get("dtype"))
+            typed = self._typed_value(raw_value, attr.get("dtype"))
+            return path, typed, False
         if node.pointer_type(attr.get("checked")):
-            return node.abs_datapath(attr["checked"]), raw_value
+            return node.abs_datapath(attr["checked"]), raw_value, False
         set_pointer = attr.get("data-set-pointer")
+        fire_pointer = attr.get("data-fire-pointer")
+        if set_pointer and fire_pointer:
+            raise ValueError(
+                f"mutation target {attr.get('id') or node.node_tag!r} "
+                "declares both data-set-pointer and data-fire-pointer",
+            )
         if set_pointer:
-            return set_pointer, attr.get("data-set-value")
+            return set_pointer, attr.get("data-set-value"), False
+        if fire_pointer:
+            message = attr.get("data-fire-value")
+            if message is None:
+                message = raw_value if raw_value is not None else True
+            return node.abs_datapath(fire_pointer), message, True
         raise ValueError(
             f"mutation target {attr.get('id') or node.node_tag!r} "
             "is not writable",

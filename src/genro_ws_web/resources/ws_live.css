@@ -80,3 +80,50 @@ body::after {
   font-size: 48px;
   letter-spacing: 2px;
 }
+
+/* Invoice demo: a CSS-grid table in the legacy-grid look — one column
+   template shared by every row (header included), numeric cells right
+   aligned, last column hosts the per-row command. */
+.inv-grid {
+  border: 1px solid #d8d8d8;
+  font-size: 13px;
+}
+.inv-row {
+  display: grid;
+  grid-template-columns: 44px minmax(120px, 1fr) 90px 64px 96px 96px 36px;
+  align-items: center;
+  border-bottom: 1px solid #ececec;
+}
+.inv-row:hover { background: #f5f8fb; }
+.inv-head {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: #555555;
+  background: #f0f4f8;
+  border-bottom: 2px solid #c8c8c8;
+}
+.inv-head:hover { background: #f0f4f8; }
+.inv-cell { padding: 4px 10px; }
+.inv-num { text-align: right; }
+.inv-cell input { width: 100%; box-sizing: border-box; }
+.inv-del {
+  border: none;
+  background: none;
+  color: #b03030;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 8px;
+}
+.inv-del:hover { background: #fbeaea; border-radius: 3px; }
+.inv-add {
+  margin: 8px 0;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+.inv-foot {
+  padding: 8px 10px;
+  background: #f0f4f8;
+  text-align: right;
+  font-weight: 600;
+}

@@ -189,12 +189,16 @@ class GenroClient {
     main.addEventListener("click", this._clickHandler);
   }
 
-  // A click on an element carrying `data-set-pointer` IS a mutation,
-  // riding the same single road as the inputs (tab strips, menus,
-  // buttons). The wire carries only the element's identity: pointer
-  // and value are the SERVER node's attributes.
+  // A click on an element carrying `data-set-pointer` (write a
+  // declared value) or `data-fire-pointer` (the page command: an
+  // event message) IS a mutation, riding the same single road as the
+  // inputs (tab strips, menus, buttons). The wire carries only the
+  // element's identity: pointer and value are the SERVER node's
+  // attributes.
   onClick(e) {
-    var el = e.target.closest ? e.target.closest("[data-set-pointer]") : null;
+    var el = e.target.closest
+      ? e.target.closest("[data-set-pointer], [data-fire-pointer]")
+      : null;
     if (!el || !el.id) return;
     this.mutate(el.id);
   }
