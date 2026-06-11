@@ -5,8 +5,24 @@
 ## Project-Specific Context
 
 ### Current Status
-- Development Status: Pre-Alpha
-- Has Implementation: No (documentation and architecture only)
+- Development Status: Alpha
+- Has Implementation: Yes (seeded 2026-06-11 from genro-builders
+  `contrib/ws_live` plus the effective widget collections)
+
+### Layout
+- `src/genro_ws_web/application.py` — `WsLiveApp` (ASGI app: startup
+  page, WSX `main`/`mutate`, server tickers)
+- `src/genro_ws_web/target.py` — `WsTargetWrapper` (connection-bound
+  render destination, pushes patch batches)
+- `src/genro_ws_web/page.py` — `WsLivePage` (page base class)
+- `src/genro_ws_web/startup_page.py` — the fixed startup skeleton
+- `src/genro_ws_web/widgets/` — the EFFECTIVE widget kit
+  (`HtmlComponentsBase`, `HtmlContainersBase`); genro-builders keeps
+  only a small didactic collection for the component/container
+  mechanics
+- `src/genro_ws_web/resources/` — `genro.js` (GenroClient), CSS
+- `src/genro_ws_web/demo/` — auto-discovered demo pages
+  (`genro-ws-live` serves them)
 
 ### Project Description
 WebSocket-driven reactive SPA framework, in pure Python. Lets you describe

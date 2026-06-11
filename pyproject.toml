@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "genro-ws-web"
-version = "0.0.0"
+version = "0.1.0"
 description = "WebSocket-driven reactive SPA framework in pure Python, on genro-builders + genro-asgi"
 readme = "README.md"
 license = "Apache-2.0"
@@ -24,7 +24,7 @@ keywords = [
     "genropy",
 ]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
@@ -35,10 +35,12 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-# Pre-Alpha: documentation and architecture only, no implementation code yet.
-# The intended runtime dependencies (genro-builders, genro-asgi) are declared
-# when the first code lands.
-dependencies = []
+dependencies = [
+    "genro-builders>=0.18.0",
+    "genro-asgi>=0.5.0",
+    "genro-routes>=0.22.0",
+    "genro-tytx>=0.9.0",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -48,6 +50,21 @@ dev = [
     "mypy>=1.0",
 ]
 
+[project.scripts]
+genro-ws-live = "genro_ws_web.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/genropy/genro-ws-web"
 Repository = "https://github.com/genropy/genro-ws-web"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/genro_ws_web"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=genro_ws_web --cov-report=term-missing"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src"]
