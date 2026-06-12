@@ -17,6 +17,7 @@ class GenroClient {
     this.pending = {};
     this.nextId = 1;
     this.ws = null;
+    this.lazyStates = {};
     // Served at /<mount>/page/<key>: the WSX prefix is everything
     // before the last "/page" segment — the key may be absent
     // (/<mount>/page/ serves the default page).
@@ -73,6 +74,23 @@ class GenroClient {
         }
         el.setAttribute(patch.name, patch.value);
       },
+      // Lazy iterate: ONE op per page — the html carries the page's
+      // blocks in order, the client owns the placeholders and fills
+      // the ones of that page (index arithmetic, no DOM anchor).
+      page: (patch) => {
+        var state = this.lazyStates[patch.id];
+        if (!state) return;
+        var tpl = document.createElement("template");
+        tpl.innerHTML = patch.html;
+        var start = patch.page * state.pageSize;
+        Array.from(tpl.content.children).forEach((block, i) => {
+          var ph = state.placeholders[start + i];
+          if (!ph) return;
+          delete state.placeholders[start + i];
+          state.observer.unobserve(ph);
+          ph.replaceWith(block);
+        });
+      },
     };
     this._onReady(() => this.connect());
   }
@@ -105,6 +123,71 @@ class GenroClient {
     });
     this.bindInputs();
     this.bindGridSync();
+    this.bindLazy();
+  }
+
+  // Lazy iterate, client half. The marker announces total and page
+  // size; page 0 is already inline (the marker's previous siblings).
+  // The client measures their REAL average height, fabricates the
+  // missing rows as placeholders — same tag, min-height = average, so
+  // the scrollbar is honest from the start and free to breathe as
+  // rows inflate — and asks a page when an empty placeholder enters
+  // the viewport: the marker fired with the page number, on the one
+  // mutation road. A re-rendered marker loses the wired mark (morph
+  // syncs attributes), so a container replace re-wires from scratch:
+  // re-render = re-query, the placeholders rebuild.
+  bindLazy() {
+    document.querySelectorAll("[data-lazy-total]").forEach((marker) => {
+      if (!marker.id || marker.hasAttribute("data-gnr-wired")) return;
+      marker.setAttribute("data-gnr-wired", "1");
+      var total = parseInt(marker.getAttribute("data-lazy-total"), 10);
+      var pageSize = parseInt(marker.getAttribute("data-lazy-page"), 10);
+      var baseId = marker.id.replace(/\.lazy$/, "");
+      var old = this.lazyStates[baseId];
+      if (old && old.observer) old.observer.disconnect();
+      var rows = [];
+      for (var el = marker.previousElementSibling;
+           el && rows.length < pageSize; el = el.previousElementSibling) {
+        rows.push(el);
+      }
+      var delivered = rows.length;
+      var avg = delivered
+        ? rows.reduce(
+            (s, r) => s + r.getBoundingClientRect().height, 0) / delivered
+        : 24;
+      var state = {
+        pageSize: pageSize,
+        requested: { 0: true },
+        placeholders: {},
+        observer: null,
+      };
+      this.lazyStates[baseId] = state;
+      var rowClass = delivered ? rows[0].className : "";
+      var frag = document.createDocumentFragment();
+      for (var i = delivered; i < total; i++) {
+        var ph = document.createElement(marker.tagName);
+        if (rowClass) ph.className = rowClass + " gnr-lazy-ph";
+        ph.style.minHeight = avg + "px";
+        ph.setAttribute("data-lazy-index", i);
+        state.placeholders[i] = ph;
+        frag.appendChild(ph);
+      }
+      marker.after(frag);
+      state.observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          var idx = parseInt(
+            entry.target.getAttribute("data-lazy-index"), 10);
+          var page = Math.floor(idx / state.pageSize);
+          if (state.requested[page]) return;
+          state.requested[page] = true;
+          this.mutate(marker.id, page);
+        });
+      }, { rootMargin: "200px" });
+      Object.keys(state.placeholders).forEach((k) => {
+        state.observer.observe(state.placeholders[k]);
+      });
+    });
   }
 
   // Three-box grids: header and footer mirror the data body's
@@ -322,6 +405,7 @@ class GenroClient {
       main.classList.remove("waiting");
       this.bindInputs();
       this.bindGridSync();
+      this.bindLazy();
       this.setStatus("ready");
     });
   }
