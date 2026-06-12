@@ -81,51 +81,80 @@ body::after {
   letter-spacing: 2px;
 }
 
-/* Invoice demo: a CSS-grid table in the legacy-grid look — one column
-   template shared by every row (header included), numeric cells right
-   aligned, last column hosts the per-row command. */
-.inv-grid {
-  border: 1px solid #d8d8d8;
+/* Grid skin — shared by every grid-shaped page (invoice, scale
+   demos). The LOOK lives in the gnr-grid-* classes; each grid adds
+   one page class declaring only its own column template (below). */
+.gnr-grid {
+  background: #ffffff;
+  border: 1px solid #d4dbe3;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(30, 50, 70, 0.08);
   font-size: 13px;
 }
-.inv-row {
+.gnr-grid-row {
   display: grid;
-  grid-template-columns: 44px minmax(120px, 1fr) 90px 64px 96px 96px 36px;
   align-items: center;
-  border-bottom: 1px solid #ececec;
+  border-bottom: 1px solid #eef1f4;
 }
-.inv-row:hover { background: #f5f8fb; }
-.inv-head {
+.gnr-grid-row:last-child { border-bottom: none; }
+.gnr-grid-row:nth-child(even):not(.gnr-grid-head) { background: #fafbfc; }
+.gnr-grid-row:not(.gnr-grid-head):hover { background: #eef5fc; }
+.gnr-grid-head {
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
   font-size: 11px;
-  color: #555555;
-  background: #f0f4f8;
-  border-bottom: 2px solid #c8c8c8;
+  color: #5a6b7c;
+  background: #f3f6f9;
+  border-bottom: 2px solid #d4dbe3;
 }
-.inv-head:hover { background: #f0f4f8; }
-.inv-cell { padding: 4px 10px; }
-.inv-num { text-align: right; }
-.inv-cell input { width: 100%; box-sizing: border-box; }
-.inv-del {
+.gnr-grid-cell { padding: 5px 10px; min-width: 0; }
+.gnr-grid-num { text-align: right; font-variant-numeric: tabular-nums; }
+.gnr-grid-cell input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  padding: 3px 6px;
+  font: inherit;
+}
+.gnr-grid-cell input:hover { border-color: #cfd8e0; background: #ffffff; }
+.gnr-grid-cell input:focus {
+  border-color: #4a90d9;
+  background: #ffffff;
+  outline: none;
+}
+.gnr-grid-del {
   border: none;
   background: none;
   color: #b03030;
   cursor: pointer;
   font-size: 14px;
   padding: 2px 8px;
+  border-radius: 3px;
 }
-.inv-del:hover { background: #fbeaea; border-radius: 3px; }
-.inv-add {
-  margin: 8px 0;
-  padding: 3px 12px;
+.gnr-grid-del:hover { background: #fbeaea; }
+.gnr-grid-add {
+  margin: 0 0 8px;
+  padding: 4px 14px;
   cursor: pointer;
+  border: 1px solid #c8d2dc;
+  border-radius: 4px;
+  background: #f7fafc;
 }
-.inv-foot {
+.gnr-grid-add:hover { background: #eef5fc; border-color: #4a90d9; }
+.gnr-grid-foot {
   padding: 8px 10px;
   background: #f0f4f8;
   text-align: right;
   font-weight: 600;
+}
+
+/* Column templates: one class per grid shape. */
+.invoice-grid .gnr-grid-row {
+  grid-template-columns: 44px minmax(120px, 1fr) 90px 64px 96px 96px 36px;
 }
 
 /* Shell: the fixed tab strip of the startup skeleton — the live page

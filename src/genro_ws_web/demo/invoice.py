@@ -32,31 +32,32 @@ from ..page import WsLivePage
 PAGE_TITLE = "Invoice (row logic)"
 
 _COLUMNS = (
-    ("Row", "inv-cell"),
-    ("Description", "inv-cell"),
-    ("Price", "inv-cell inv-num"),
-    ("Qty", "inv-cell inv-num"),
-    ("Total", "inv-cell inv-num"),
-    ("Converted", "inv-cell inv-num"),
-    ("", "inv-cell"),
+    ("Row", "gnr-grid-cell"),
+    ("Description", "gnr-grid-cell"),
+    ("Price", "gnr-grid-cell gnr-grid-num"),
+    ("Qty", "gnr-grid-cell gnr-grid-num"),
+    ("Total", "gnr-grid-cell gnr-grid-num"),
+    ("Converted", "gnr-grid-cell gnr-grid-num"),
+    ("", "gnr-grid-cell"),
 )
 
 
 class Page(WsLivePage):
     @component
     def invoice_row(self, root, node_label=None):
-        row = root.div(datapath="." + node_label, class_="inv-row")
-        row.div(node_label, class_="inv-cell", font_weight="600")
-        row.div(class_="inv-cell").input(value="^.description")
-        row.div(class_="inv-cell inv-num").input(value="^.price", dtype="N",
-                                                 html_type="number")
-        row.div(class_="inv-cell inv-num").input(value="^.qty", dtype="L",
-                                                 html_type="number")
-        row.div("^.total", class_="inv-cell inv-num")
-        row.div("^.converted", class_="inv-cell inv-num", color="#2c5f8a")
+        row = root.div(datapath="." + node_label, class_="gnr-grid-row")
+        row.div(node_label, class_="gnr-grid-cell", font_weight="600")
+        row.div(class_="gnr-grid-cell").input(value="^.description")
+        row.div(class_="gnr-grid-cell gnr-grid-num").input(
+            value="^.price", dtype="N", html_type="number")
+        row.div(class_="gnr-grid-cell gnr-grid-num").input(
+            value="^.qty", dtype="L", html_type="number")
+        row.div("^.total", class_="gnr-grid-cell gnr-grid-num")
+        row.div("^.converted", class_="gnr-grid-cell gnr-grid-num",
+                color="#2c5f8a")
         # The per-row command: the message (WHICH row) is the node's
         # own attribute, baked at expansion — the click is identity.
-        row.button("−", class_="inv-del", title="remove this row",
+        row.button("−", class_="gnr-grid-del", title="remove this row",
                    **{"data-fire-pointer": "commands.del_row",
                       "data-fire-value": node_label})
         # Row rules: mutation-only (the loaded document is trusted).
@@ -93,15 +94,15 @@ class Page(WsLivePage):
         header.html_label("Rate", color="#555555", margin_left="16px")
         header.input(value="^header.rate", dtype="N",
                      html_type="number", step="0.01", width="80px")
-        grid = pane.div(class_="inv-grid")
-        head = grid.div(class_="inv-row inv-head")
+        # The page command, toolbar side: no declared message — the
+        # fired value defaults to True (the command needs no payload).
+        pane.button("+ add row", class_="gnr-grid-add",
+                    **{"data-fire-pointer": "commands.add_row"})
+        grid = pane.div(class_="gnr-grid invoice-grid")
+        head = grid.div(class_="gnr-grid-row gnr-grid-head")
         for caption, klass in _COLUMNS:
             head.div(caption, class_=klass)
         grid.invoice_row(iterate="^rows")
-        # The page command, footer side: no declared message — the
-        # fired value defaults to True (the command needs no payload).
-        pane.button("+ add row", class_="inv-add",
-                    **{"data-fire-pointer": "commands.add_row"})
         pane.data_controller(func="add_row", trigger="^commands.add_row")
         pane.data_controller(func="del_row", label="^commands.del_row")
         pane.data_formula(destination="grand.total", func="grand_total",
@@ -109,7 +110,7 @@ class Page(WsLivePage):
         pane.data_formula(destination="grand.converted",
                           func="grand_converted", rows="^rows",
                           _on_start=True)
-        out = pane.p(class_="inv-foot")
+        out = pane.p(class_="gnr-grid-foot")
         out.span("Grand total: ${total} — converted: ${converted}",
                  total="^grand.total", converted="^grand.converted")
 
