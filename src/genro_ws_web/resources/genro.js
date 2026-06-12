@@ -83,6 +83,19 @@ class GenroClient {
       if (op) op(patch);
     });
     this.bindInputs();
+    this.bindGridSync();
+  }
+
+  // Three-box grids: header and footer mirror the data body's
+  // horizontal scroll (separate scrollers cannot be coupled in CSS).
+  bindGridSync() {
+    document.querySelectorAll(".gnr-grid-body").forEach((body) => {
+      body.onscroll = () => {
+        body.parentElement
+          .querySelectorAll(":scope > .gnr-grid-edge")
+          .forEach((row) => { row.scrollLeft = body.scrollLeft; });
+      };
+    });
   }
 
   // ---------------------------------------------------------------- morph
@@ -287,6 +300,7 @@ class GenroClient {
       main.innerHTML = data.html || "";
       main.classList.remove("waiting");
       this.bindInputs();
+      this.bindGridSync();
       this.setStatus("ready");
     });
   }

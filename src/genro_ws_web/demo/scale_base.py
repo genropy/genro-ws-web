@@ -102,13 +102,22 @@ class ScaleGridPage(WsLivePage):
                     **{"data-fire-pointer": "commands.del_selected"})
         grid = pane.div(
             class_="gnr-grid gnr-grid-scroll gnr-grid-pin scale-grid")
-        head = grid.div(class_="gnr-grid-row gnr-grid-head")
+        # Three-box layout: header edge / scrolling body / footer edge.
+        # The edges hide their overflow and mirror the body's
+        # horizontal scroll (genro.js); the rows inside keep the
+        # template min-width, so the tracks align by construction.
+        head = grid.div(class_="gnr-grid-edge").div(
+            class_="gnr-grid-row gnr-grid-head")
         for caption, klass in _COLUMNS:
             head.div(caption, class_=klass)
-        grid.scale_row(iterate="^rows")
-        # The grid footer: sticky with the scroll, the totals live in
-        # their own columns.
-        foot = grid.div(class_="gnr-grid-row gnr-grid-footrow")
+        # The data body is the ONLY scrolling box (both axes): the
+        # scrollbars live between header and footer. Side benefit: it
+        # is also the iterate's enclosing element — a coalesced
+        # broadcast replaces the body, never header or footer.
+        grid.div(class_="gnr-grid-body").scale_row(iterate="^rows")
+        # The grid footer: the totals live in their own columns.
+        foot = grid.div(class_="gnr-grid-edge").div(
+            class_="gnr-grid-row gnr-grid-footrow")
         foot.div("Totals", class_="gnr-grid-cell")
         foot.div(class_="gnr-grid-cell")
         foot.div(class_="gnr-grid-cell")

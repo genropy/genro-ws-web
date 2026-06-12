@@ -152,25 +152,27 @@ body::after {
   font-weight: 600;
 }
 
-/* Opt-in scrolling: cap the container, scrollbars appear only on the
-   grid box and only on the axis that overflows. Header sticks to the
-   top, the footer row (totals) to the bottom. */
-.gnr-grid-scroll {
-  max-height: 65vh;
+/* Opt-in scrolling, three-box layout: header / scrolling body /
+   footer. BOTH scrollbars live on the data body only — the vertical
+   one between header and footer, the horizontal one above the footer.
+   Header and footer follow the body's horizontal scroll via the
+   generic sync in genro.js (scrollLeft mirroring: pure CSS cannot
+   couple separate scrollers). */
+.gnr-grid-scroll > .gnr-grid-body {
+  max-height: 60vh;
   overflow: auto;
 }
-.gnr-grid-scroll .gnr-grid-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+.gnr-grid-edge {
+  /* header/footer live inside an edge box: the BOX stays as wide as
+     the grid (hidden overflow, scrollLeft-mirrored by genro.js), the
+     ROW inside keeps the template min-width — identical tracks in
+     all three boxes, columns aligned by construction. */
+  overflow-x: hidden;
 }
 .gnr-grid-footrow {
-  position: sticky;
-  bottom: 0;
   background: #f3f6f9;
   border-top: 2px solid #d4dbe3;
   font-weight: 600;
-  z-index: 2;
 }
 
 /* Opt-in pinned first column (matters with horizontal scroll). The
