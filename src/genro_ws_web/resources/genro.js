@@ -52,6 +52,27 @@ class GenroClient {
         var el = document.getElementById(patch.id);
         if (el) el.remove();
       },
+      // Value-only cell patches: the wire carries {id, value}
+      // downstream too. `text` sets the element's text content,
+      // `attr` an attribute — on form controls the live property,
+      // unless the control is sovereign (focused: its edits are
+      // already the truth).
+      text: (patch) => {
+        var el = document.getElementById(patch.id);
+        if (el) el.textContent = patch.value;
+      },
+      attr: (patch) => {
+        var el = document.getElementById(patch.id);
+        if (!el) return;
+        var sovereign = el === document.activeElement
+          && el.matches("input, select, textarea");
+        if (patch.name === "value"
+            && el.matches("input, select, textarea")) {
+          if (!sovereign) el.value = patch.value;
+          return;
+        }
+        el.setAttribute(patch.name, patch.value);
+      },
     };
     this._onReady(() => this.connect());
   }
