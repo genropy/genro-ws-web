@@ -152,23 +152,66 @@ body::after {
   font-weight: 600;
 }
 
-/* Opt-in scrolling: cap the container, the header stays visible. */
+/* Opt-in scrolling: cap the container, scrollbars appear only on the
+   grid box and only on the axis that overflows. Header sticks to the
+   top, the footer row (totals) to the bottom. */
 .gnr-grid-scroll {
   max-height: 65vh;
-  overflow-y: auto;
+  overflow: auto;
 }
 .gnr-grid-scroll .gnr-grid-head {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
 }
+.gnr-grid-footrow {
+  position: sticky;
+  bottom: 0;
+  background: #f3f6f9;
+  border-top: 2px solid #d4dbe3;
+  font-weight: 600;
+  z-index: 2;
+}
+
+/* Opt-in pinned first column (matters with horizontal scroll). The
+   pinned cell needs its own solid background per row state: a sticky
+   cell over a transparent row would let scrolled content bleed
+   through. */
+.gnr-grid-pin .gnr-grid-row > :first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #ffffff;
+}
+.gnr-grid-pin .gnr-grid-row:nth-child(even):not(.gnr-grid-head) > :first-child {
+  background: #fafbfc;
+}
+.gnr-grid-pin .gnr-grid-row:not(.gnr-grid-head):hover > :first-child {
+  background: #eef5fc;
+}
+.gnr-grid-pin .gnr-grid-head > :first-child,
+.gnr-grid-pin .gnr-grid-footrow > :first-child {
+  background: inherit;
+  z-index: 3;
+}
+.gnr-grid-ins {
+  border: none;
+  background: none;
+  color: #2c7a3d;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.gnr-grid-ins:hover { background: #e8f5ec; }
 
 /* Column templates: one class per grid shape. */
 .invoice-grid .gnr-grid-row {
-  grid-template-columns: 44px minmax(120px, 1fr) 90px 64px 96px 96px 36px;
+  grid-template-columns: 44px minmax(120px, 1fr) 90px 64px 96px 96px 76px;
 }
 .scale-grid .gnr-grid-row {
-  grid-template-columns: 64px minmax(120px, 1fr) 80px 90px 100px 100px 36px;
+  grid-template-columns: 64px minmax(160px, 1fr) 90px 100px 110px 110px 76px;
+  min-width: 880px;
 }
 
 /* Shell: the fixed tab strip of the startup skeleton — the live page

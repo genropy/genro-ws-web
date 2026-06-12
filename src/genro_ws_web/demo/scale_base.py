@@ -48,9 +48,14 @@ class ScaleGridPage(WsLivePage):
         row.div("^.total", class_="gnr-grid-cell gnr-grid-num")
         row.div("^.converted", class_="gnr-grid-cell gnr-grid-num",
                 color="#2c5f8a")
-        row.button("−", class_="gnr-grid-del", title="remove this row",
-                   **{"data-fire-pointer": "commands.del_row",
-                      "data-fire-value": node_label})
+        commands = row.div(class_="gnr-grid-cell")
+        commands.button("+", class_="gnr-grid-ins",
+                        title="insert a row above this one",
+                        **{"data-fire-pointer": "commands.ins_row",
+                           "data-fire-value": node_label})
+        commands.button("−", class_="gnr-grid-del", title="remove this row",
+                        **{"data-fire-pointer": "commands.del_row",
+                           "data-fire-value": node_label})
         row.data_formula(destination=".total", func="row_total",
                          qty="^.qty", price="^.price")
         row.data_formula(destination=".converted", func="convert",
@@ -81,17 +86,30 @@ class ScaleGridPage(WsLivePage):
                      html_type="number", step="0.01", width="80px")
         pane.button("+ add row", class_="gnr-grid-add",
                     **{"data-fire-pointer": "commands.add_row"})
-        grid = pane.div(class_="gnr-grid gnr-grid-scroll scale-grid")
+        grid = pane.div(
+            class_="gnr-grid gnr-grid-scroll gnr-grid-pin scale-grid")
         head = grid.div(class_="gnr-grid-row gnr-grid-head")
         for caption, klass in _COLUMNS:
             head.div(caption, class_=klass)
         grid.scale_row(iterate="^rows")
+        # The grid footer: sticky with the scroll, the totals live in
+        # their own columns.
+        foot = grid.div(class_="gnr-grid-row gnr-grid-footrow")
+        foot.div("Totals", class_="gnr-grid-cell")
+        foot.div(class_="gnr-grid-cell")
+        foot.div(class_="gnr-grid-cell")
+        foot.div(class_="gnr-grid-cell")
+        foot.div("^grand.total", class_="gnr-grid-cell gnr-grid-num")
+        foot.div("^grand.converted", class_="gnr-grid-cell gnr-grid-num")
+        foot.div(class_="gnr-grid-cell")
         pane.data_controller(func="add_row", trigger="^commands.add_row")
+        pane.data_controller(func="ins_row", label="^commands.ins_row")
         pane.data_controller(func="del_row", label="^commands.del_row")
         pane.data_formula(destination="grand.total", func="grand_total",
                           rows="^rows", _on_start=True)
-        out = pane.p(class_="gnr-grid-foot")
-        out.span("Grand total: ${total}", total="^grand.total")
+        pane.data_formula(destination="grand.converted",
+                          func="grand_converted", rows="^rows",
+                          _on_start=True)
 
     @staticmethod
     def add_row(node, trigger=None):
@@ -109,6 +127,28 @@ class ScaleGridPage(WsLivePage):
         row["total"] = 0.0
         row["converted"] = 0.0
         node.SET(f"rows.r{ordinal}", row)
+
+    @staticmethod
+    def ins_row(node, label=None):
+        """Insert a fresh row ABOVE the clicked one: the bag places by
+        position (identity stays rN — identity is not position)."""
+        if not label:
+            return
+        rows = node.GET("rows")
+        ordinal = 1 + max(
+            (int(lbl[1:]) for lbl in rows.keys() if lbl[1:].isdigit()),
+            default=0,
+        )
+        row = Bag()
+        row["name"] = f"Item {ordinal}"
+        row["qty"] = 1
+        row["price"] = 0.0
+        row["total"] = 0.0
+        row["converted"] = 0.0
+        node.data_handler.data.set_item(
+            node.abs_datapath(f"rows.r{ordinal}"), row,
+            node_position=f"<{label}",
+        )
 
     @staticmethod
     def del_row(node, label=None):
@@ -133,3 +173,11 @@ class ScaleGridPage(WsLivePage):
         if rows is None:
             return 0
         return round(sum(float(r["total"] or 0) for r in rows.values()), 2)
+
+    @staticmethod
+    def grand_converted(rows):
+        if rows is None:
+            return 0
+        return round(
+            sum(float(r["converted"] or 0) for r in rows.values()), 2,
+        )
