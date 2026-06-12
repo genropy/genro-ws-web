@@ -443,7 +443,63 @@ class GenroClient {
       this.bindInputs();
       this.bindGridSync();
       this.bindLazy();
+      this.bindSplitters();
       this.setStatus("ready");
+    });
+  }
+
+  // Legacy `splitter=True` on a regioned child: the kernel plants a
+  // drag bar on the region's inner edge; the dragged size is CLIENT
+  // UI state (inline style), like the <details> open state.
+  bindSplitters() {
+    var main = this.mainWindow();
+    if (!main) return;
+    var edges = { left: "right", right: "left",
+                  top: "bottom", bottom: "top" };
+    main.querySelectorAll(
+      ".gnr-border-container > [region][splitter]"
+    ).forEach(function (region) {
+      if (region._gnrSplitter) return;
+      region._gnrSplitter = true;
+      var side = region.getAttribute("region");
+      var edge = edges[side];
+      if (!edge) return;                       // center never splits
+      var horizontal = side === "left" || side === "right";
+      region.style.position = "relative";
+      var bar = document.createElement("div");
+      bar.className = "gnr-splitter";
+      bar.style[edge] = "-3px";
+      bar.style.cursor = horizontal ? "col-resize" : "row-resize";
+      if (horizontal) {
+        bar.style.top = "0"; bar.style.bottom = "0";
+        bar.style.width = "6px";
+      } else {
+        bar.style.left = "0"; bar.style.right = "0";
+        bar.style.height = "6px";
+      }
+      region.appendChild(bar);
+      bar.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+        bar.setPointerCapture(e.pointerId);
+        var move = function (ev) {
+          var r = region.getBoundingClientRect();
+          if (side === "left") {
+            region.style.width = Math.max(40, ev.clientX - r.left) + "px";
+          } else if (side === "right") {
+            region.style.width = Math.max(40, r.right - ev.clientX) + "px";
+          } else if (side === "top") {
+            region.style.height = Math.max(40, ev.clientY - r.top) + "px";
+          } else {
+            region.style.height = Math.max(40, r.bottom - ev.clientY) + "px";
+          }
+        };
+        var up = function () {
+          bar.removeEventListener("pointermove", move);
+          bar.removeEventListener("pointerup", up);
+        };
+        bar.addEventListener("pointermove", move);
+        bar.addEventListener("pointerup", up);
+      });
     });
   }
 

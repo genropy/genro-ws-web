@@ -40,9 +40,10 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
 
     def main(self, root):
         bc = root.border_container(height="calc(100vh - 80px)")
-        left = bc.zone("left", width="320px", overflow="auto",
-                       padding="8px", border_right="1px solid #c8c8c8",
-                       background="#fafbfc")
+        left = bc.div(region="left", width="320px", splitter=True,
+                      overflow="auto", padding="8px",
+                      border_right="1px solid #c8c8c8",
+                      background="#fafbfc")
         pane = left.div(datapath="shell")
         pane.h1("genro-ws-web", font_size="1.1em", margin="4px 0 8px 0")
         pane.tree(wid="shell", store="^.pages",
@@ -52,9 +53,9 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
                color="#888888")
         pane.data_controller(func="open_page", trigger="^.open_page")
 
-        center = bc.zone("center", overflow="auto", padding="8px")
+        center = bc.div(region="center", overflow="auto", padding="8px")
         shell = center.div(datapath="shell", height="100%")
-        self._shell_tabs = shell.tab_container(selected="^.current")
+        self._shell_tabs = shell.tab_container(selected_page="^.current")
 
     # -------------------------------------------------------- data logic
     @staticmethod
@@ -70,10 +71,11 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
         if not page_key:
             return
         shell = node.builder
-        if not node.GET(f"shell.opened.{page_key}"):
+        token = shell._shell_tabs.attr.get("node_id")
+        if page_key not in shell.tab_keys(token):
             pane = shell.tab(shell._shell_tabs,
-                             node.GET(f"{trigger}?caption"), key=page_key)
+                             node.GET(f"{trigger}?caption"), key=page_key,
+                             closable=True)
             pane.iframe(src=page_key, width="100%",
                         height="calc(100vh - 160px)", border="0")
-            node.PUT(f"shell.opened.{page_key}", True)
         node.SET("shell.current", page_key)

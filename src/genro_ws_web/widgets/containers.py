@@ -7,11 +7,14 @@ real identity (``target_id``): every zone and pane is individually
 patchable, and an <iframe> hosted inside survives the updates around
 it (the client morph never disconnects matched elements).
 
-- ``border_container`` / ``zone``: a CSS grid with named areas
-  (top / left-center-right / bottom). Sizes live ON the zones; an
-  absent zone collapses by itself (auto tracks) — zero arithmetic on
-  the parent. ``zone("bottom", height="0")`` exists but collapsed,
-  reopenable through data.
+- ``border_container``: a CSS grid with named areas (top /
+  left-center-right / bottom), the LEGACY contract: any CHILD
+  declares its region as an attribute — ``bc.div(region="left",
+  width="320px", splitter=True)``, a nested
+  ``border_container(region="center")`` included — and the shared css
+  places it. Sizes live ON the regioned child; an absent region
+  collapses by itself (auto tracks); ``splitter=True`` gets the
+  draggable bar (client guidance, the kernel plants it).
 - ``tab_container`` / ``tab``: the selected key lives in DATA
   (``selected="^ui.tab"``), the click IS a mutation (the tab strip
   carries ``data-set-pointer``/``data-set-value``, the client
@@ -27,19 +30,27 @@ Usage::
     class Page(HtmlBuilder, HtmlContainersBase):
         def main(self, root):
             bc = root.border_container(height="100vh")
-            bc.zone("top", height="48px").h1("Header")
-            tc = bc.zone("center").tab_container(selected="^ui.tab")
+            bc.div(region="top", height="48px").h1("Header")
+            tc = bc.div(region="center").tab_container(
+                selected_page="^ui.tab")
             tc.tab("First", key="one").div("...")
-            tc.tab("Second", key="two").iframe(src="widgets")
+            tc.tab("Second", key="two", closable=True).iframe(src="widgets")
 """
 from __future__ import annotations
 
 from genro_builders.builder import container
 
-_REGIONS = ("left", "right", "top", "bottom", "center")
 _TAB_POSITIONS = {
     "top": "column", "bottom": "column-reverse",
     "left": "row", "right": "row-reverse",
+}
+
+#: the two legacy designs (dijit BorderContainer): headline = top and
+#: bottom span the full width; sidebar = left and right span the full
+#: height.
+_BC_DESIGNS = {
+    "headline": '"top top top" "left center right" "bottom bottom bottom"',
+    "sidebar": '"left top right" "left center right" "left bottom right"',
 }
 
 
@@ -51,33 +62,27 @@ class HtmlContainersBase:
     _gnr_tabs_serial = 0
 
     # ------------------------------------------------------------------
-    # border container — grid with named areas, sizes on the zones
+    # border container — grid with named areas, regions on the children
     # ------------------------------------------------------------------
 
-    # Explicit dispatch names: the legacy prefix-strip rule would turn
-    # both compound names into "container" (a collision).
+    # Explicit dispatch name: the legacy prefix-strip rule would turn
+    # the compound name into "container" (a collision).
     @container("border_container")
-    def border_container(self, pane, **attrs):
+    def border_container(self, pane, design="headline", **attrs):
+        """``design`` is the legacy pair: ``headline`` (top/bottom span
+        the full width) or ``sidebar`` (left/right span the full
+        height)."""
+        if design not in _BC_DESIGNS:
+            raise ValueError(
+                f"unknown design {design!r}: one of {tuple(_BC_DESIGNS)}",
+            )
         return pane.div(
             class_="gnr-border-container",
             display="grid",
-            grid_template_areas=(
-                '"top top top" "left center right" "bottom bottom bottom"'
-            ),
+            grid_template_areas=_BC_DESIGNS[design],
             grid_template_rows="auto 1fr auto",
             grid_template_columns="auto 1fr auto",
             **attrs,
-        )
-
-    @container
-    def zone(self, pane, region, **attrs):
-        if region not in _REGIONS:
-            raise ValueError(
-                f"unknown region {region!r}: one of {_REGIONS}",
-            )
-        return pane.div(
-            class_="gnr-zone", grid_area=region,
-            min_width="0", min_height="0", **attrs,
         )
 
     # ------------------------------------------------------------------
@@ -85,13 +90,18 @@ class HtmlContainersBase:
     # ------------------------------------------------------------------
 
     @container("tab_container")
-    def tab_container(self, pane, selected=None, tabs_position="top",
-                      **attrs):
-        """The shell: tab strip + panes. ``selected`` is a reactive
-        pointer to the selected key; ``tabs_position`` puts the strip
-        on one of the four sides."""
-        if selected is None:
-            raise ValueError("tab_container() requires a selected pointer")
+    def tab_container(self, pane, selected=None, selected_page=None,
+                      tabs_position="top", **attrs):
+        """The shell: tab strip + panes. The LEGACY pair:
+        ``selected_page`` is the reactive pointer to the selected page
+        KEY (drives the css visibility — required); ``selected`` is the
+        optional pointer receiving the selected page INDEX (kept by a
+        planted controller, recomputed when tabs close).
+        ``tabs_position`` puts the strip on one of the four sides."""
+        if selected_page is None:
+            raise ValueError(
+                "tab_container() requires a selected_page pointer",
+            )
         if tabs_position not in _TAB_POSITIONS:
             raise ValueError(
                 f"unknown tabs_position {tabs_position!r}: "
@@ -102,7 +112,7 @@ class HtmlContainersBase:
         outer = pane.div(
             class_=f"gnr-tabs {token}", node_id=token,
             display="flex", flex_direction=_TAB_POSITIONS[tabs_position],
-            **{"data-selected": selected}, **attrs,
+            **{"data-selected": selected_page}, **attrs,
         )
         # The per-instance rules: one base rule now, one per key as the
         # tabs are added (build time — the keys are the author's). A
@@ -122,13 +132,30 @@ class HtmlContainersBase:
         outer.div(
             class_="gnr-tab-panes", node_id=f"{token}-panes", flex="1",
         )
+        page_key_path = outer.abs_datapath(selected_page).split(".", 1)[1]
+        # The close lane: one controller per container, fired by the
+        # tab ✕ with the page key as the message.
+        outer.data_controller(
+            func="gnr_tab_close", trigger=f"^_tabs.{token}.close",
+            token=token, page_key_path=page_key_path,
+        )
+        if selected is not None:
+            # Legacy ``selected``: the INDEX of the selected page,
+            # derived from the key (and re-derived when tabs close).
+            outer.data_controller(
+                func="gnr_tab_index", trigger=selected_page,
+                token=token,
+                dest=outer.abs_datapath(selected).split(".", 1)[1],
+            )
         return outer
 
     @container
-    def tab(self, tabs, label, key=None, **attrs):
-        """One tab: the strip gets the clickable label, the panes get
-        the (returned) fillable pane, the instance style gets the
-        per-key visibility and active-strip rules."""
+    def tab(self, tabs, label, key=None, closable=False, **attrs):
+        """One tab: the strip gets the clickable label (plus the close
+        ✕ when ``closable`` — the legacy pane verb: it pops the tab
+        from the STRUCTURE), the panes get the (returned) fillable
+        pane, the instance style gets the per-key visibility and
+        active-strip rules."""
         if key is None:
             raise ValueError("tab() requires a key")
         token = tabs.attr.get("node_id")
@@ -136,9 +163,14 @@ class HtmlContainersBase:
         bar = self.node_by_id(f"{token}-bar")
         panes = self.node_by_id(f"{token}-panes")
         styles = self.node_by_id(f"{token}-style")
-        bar.div(label, class_="gnr-tab", **{
+        btn = bar.div(class_="gnr-tab", **{
             "data-set-pointer": selected_abs, "data-set-value": key,
         })
+        btn.span(label)
+        if closable:
+            btn.span("✕", class_="gnr-tab-close",
+                     **{"data-fire-pointer": f"_tabs.{token}.close",
+                        "data-fire-value": key})
         styles.set_value(
             styles.value
             + f'.{token}[data-selected="{key}"] > .gnr-tab-panes > '
@@ -151,3 +183,47 @@ class HtmlContainersBase:
         return panes.div(
             class_="gnr-tab-pane", **{"data-key": key}, **attrs,
         )
+
+    def tab_keys(self, token):
+        """The CURRENT page keys of a tab container, in strip order."""
+        panes = self.node_by_id(f"{token}-panes")
+        if panes.value is None:
+            return []
+        return [n.attr.get("data-key") for n in panes.value.nodes]
+
+    # -------------------------------------------------- tab data logic
+    @staticmethod
+    def gnr_tab_close(node, trigger=None, token=None, page_key_path=None):
+        """The ✕ fired a page key: pop button and pane from the
+        structure (the legacy ``deletePage``), then fix the selection —
+        the neighbour takes over, the last close clears it (legacy
+        nulls on empty)."""
+        if not trigger:
+            return
+        page = node.builder
+        keys = page.tab_keys(token)
+        if trigger not in keys:
+            return
+        idx = keys.index(trigger)
+        bar = page.node_by_id(f"{token}-bar")
+        panes = page.node_by_id(f"{token}-panes")
+        for parent, attr_name in (
+            (bar, "data-set-value"), (panes, "data-key"),
+        ):
+            for child in list(parent.value.nodes):
+                if child.attr.get(attr_name) == trigger:
+                    parent.value.pop_node(child.label)
+                    break
+        if node.GET(page_key_path) == trigger:
+            remaining = [k for k in keys if k != trigger]
+            node.SET(
+                page_key_path,
+                remaining[min(idx, len(remaining) - 1)]
+                if remaining else None,
+            )
+
+    @staticmethod
+    def gnr_tab_index(node, trigger=None, token=None, dest=None):
+        """Legacy ``selected``: the key became an index."""
+        keys = node.builder.tab_keys(token)
+        node.SET(dest, keys.index(trigger) if trigger in keys else None)

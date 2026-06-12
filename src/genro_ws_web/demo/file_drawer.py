@@ -83,9 +83,10 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
     def main(self, root):
         # The gnride frame: drawer on the LEFT, editor stack CENTER.
         bc = root.border_container(height="calc(100vh - 80px)")
-        left = bc.zone("left", width="320px", overflow="auto",
-                       padding="8px", border_right="1px solid #c8c8c8",
-                       background="#fafbfc")
+        left = bc.div(region="left", width="320px", splitter=True,
+                      overflow="auto", padding="8px",
+                      border_right="1px solid #c8c8c8",
+                      background="#fafbfc")
         pane = left.div(datapath="drawer")
         pane.h1("File drawer", font_size="1.1em", margin="4px 0 8px 0")
         pane.tree(wid="drawer", store="^.directories",
@@ -98,13 +99,13 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
                   font_family="monospace")
         pane.data_controller(func="open_file", trigger="^.open_file")
 
-        center = bc.zone("center", overflow="auto", padding="8px")
+        center = bc.div(region="center", overflow="auto", padding="8px")
         editor = center.div(datapath="editor", height="100%")
         # The editor stack: a REAL tab_container (panes are live source
         # nodes; switching tabs is an attribute-only morph — iframes
         # never reload). The handle parks on the instance: the rule
         # plants the runtime tabs there.
-        self._editor_tabs = editor.tab_container(selected="^.current")
+        self._editor_tabs = editor.tab_container(selected_page="^.current")
 
     # -------------------------------------------------------- data logic
     @staticmethod
@@ -124,11 +125,12 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
             return
         key = trigger.replace(".", "_")
         page = node.builder
-        if not node.GET(f"editor.opened.{key}"):
+        token = page._editor_tabs.attr.get("node_id")
+        if key not in page.tab_keys(token):
             pane = page.tab(page._editor_tabs,
-                            node.GET(f"{trigger}?caption"), key=key)
+                            node.GET(f"{trigger}?caption"), key=key,
+                            closable=True)
             pane.iframe(src=f"../codefile?path={quote(abs_path)}",
                         width="100%", height="calc(100vh - 170px)",
                         border="0")
-            node.PUT(f"editor.opened.{key}", True)
         node.SET("editor.current", key)
