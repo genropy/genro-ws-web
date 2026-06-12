@@ -64,6 +64,11 @@ class ScaleGridPage(WsLivePage):
 
     def setup(self, data):
         self.set_data("header.rate", 0.89)
+        # The numeric data declares its own presentation (mask, fixed
+        # decimals): every reader — full render, row replace, cell
+        # patch — shows the datum the way the datum says.
+        data.set_item("grand.total", 0.0, mask="%.2f")
+        data.set_item("grand.converted", 0.0, mask="%.2f")
         for n in range(1, self.rows_count + 1):
             qty = n % 9 + 1
             price = float(n % 50 + 1)
@@ -71,9 +76,9 @@ class ScaleGridPage(WsLivePage):
             row = Bag()
             row["name"] = f"Item {n}"
             row["qty"] = qty
-            row["price"] = price
-            row["total"] = total
-            row["converted"] = round(total * 0.89, 2)
+            row.set_item("price", price, mask="%.2f")
+            row.set_item("total", total, mask="%.2f")
+            row.set_item("converted", round(total * 0.89, 2), mask="%.2f")
             data.set_item(f"rows.r{n}", row)
 
     def main(self, root):
@@ -107,7 +112,10 @@ class ScaleGridPage(WsLivePage):
         # scrollbars live between header and footer. Side benefit: it
         # is also the iterate's enclosing element — a coalesced
         # broadcast replaces the body, never header or footer.
-        grid.div(class_="gnr-grid-body").scale_row(iterate="^rows")
+        # Store-backed lazy: the collection lives in the store and
+        # stays fully editable; the render pages with the scroll.
+        grid.div(class_="gnr-grid-body").scale_row(
+            iterate="^rows", lazy=True, id="rows")
         # The grid footer: the totals live in their own columns.
         foot = grid.div(class_="gnr-grid-edge").div(
             class_="gnr-grid-row gnr-grid-footrow")
@@ -146,9 +154,9 @@ class ScaleGridPage(WsLivePage):
         row = Bag()
         row["name"] = f"Item {ordinal}"
         row["qty"] = 1
-        row["price"] = 0.0
-        row["total"] = 0.0
-        row["converted"] = 0.0
+        row.set_item("price", 0.0, mask="%.2f")
+        row.set_item("total", 0.0, mask="%.2f")
+        row.set_item("converted", 0.0, mask="%.2f")
         if label and node.GET(f"rows.{label}") is not None:
             node.data_handler.data.set_item(
                 node.abs_datapath(f"rows.r{ordinal}"), row,
@@ -171,9 +179,9 @@ class ScaleGridPage(WsLivePage):
         row = Bag()
         row["name"] = f"Item {ordinal}"
         row["qty"] = 1
-        row["price"] = 0.0
-        row["total"] = 0.0
-        row["converted"] = 0.0
+        row.set_item("price", 0.0, mask="%.2f")
+        row.set_item("total", 0.0, mask="%.2f")
+        row.set_item("converted", 0.0, mask="%.2f")
         node.data_handler.data.set_item(
             node.abs_datapath(f"rows.r{ordinal}"), row,
             node_position=f"<{label}",

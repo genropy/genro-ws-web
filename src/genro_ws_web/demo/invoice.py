@@ -74,6 +74,10 @@ class Page(WsLivePage):
     def setup(self, data):
         self.set_data("header.currency", "EUR -> USD")
         self.set_data("header.rate", 0.89)
+        # Numeric data declares its presentation: fixed decimals ride
+        # the mask, every reader shows the datum the way it says.
+        data.set_item("grand.total", 0.0, mask="%.2f")
+        data.set_item("grand.converted", 0.0, mask="%.2f")
         rows = (
             ("r1", "Keyboard", 2, 80.0),
             ("r2", "Monitor", 3, 240.0),
@@ -83,10 +87,10 @@ class Page(WsLivePage):
             total = qty * price
             self.set_data(f"rows.{label}.description", description)
             self.set_data(f"rows.{label}.qty", qty)
-            self.set_data(f"rows.{label}.price", price)
-            self.set_data(f"rows.{label}.total", total)
-            self.set_data(f"rows.{label}.converted",
-                          round(total * 0.89, 2))
+            data.set_item(f"rows.{label}.price", price, mask="%.2f")
+            data.set_item(f"rows.{label}.total", total, mask="%.2f")
+            data.set_item(f"rows.{label}.converted",
+                          round(total * 0.89, 2), mask="%.2f")
 
     def main(self, root):
         pane = root.div(max_width="720px")
@@ -138,9 +142,9 @@ class Page(WsLivePage):
         row = Bag()
         row["description"] = ""
         row["qty"] = 1
-        row["price"] = 0.0
-        row["total"] = 0.0
-        row["converted"] = 0.0
+        row.set_item("price", 0.0, mask="%.2f")
+        row.set_item("total", 0.0, mask="%.2f")
+        row.set_item("converted", 0.0, mask="%.2f")
         node.SET(f"rows.r{ordinal}", row)
 
     @staticmethod
@@ -157,9 +161,9 @@ class Page(WsLivePage):
         row = Bag()
         row["description"] = ""
         row["qty"] = 1
-        row["price"] = 0.0
-        row["total"] = 0.0
-        row["converted"] = 0.0
+        row.set_item("price", 0.0, mask="%.2f")
+        row.set_item("total", 0.0, mask="%.2f")
+        row.set_item("converted", 0.0, mask="%.2f")
         node.data_handler.data.set_item(
             node.abs_datapath(f"rows.r{ordinal}"), row,
             node_position=f"<{label}",
