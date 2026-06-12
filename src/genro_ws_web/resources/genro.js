@@ -300,10 +300,15 @@ class GenroClient {
     if (!this._clickHandler) {
       this._clickHandler = (e) => this.onClick(e);
     }
+    if (!this._dblHandler) {
+      this._dblHandler = (e) => this.onDblClick(e);
+    }
     main.removeEventListener("input", this._inputHandler);
     main.addEventListener("input", this._inputHandler);
     main.removeEventListener("click", this._clickHandler);
     main.addEventListener("click", this._clickHandler);
+    main.removeEventListener("dblclick", this._dblHandler);
+    main.addEventListener("dblclick", this._dblHandler);
   }
 
   // A click on an element carrying `data-set-pointer` (write a
@@ -316,6 +321,22 @@ class GenroClient {
     var el = e.target.closest
       ? e.target.closest("[data-set-pointer], [data-fire-pointer]")
       : null;
+    // A dblclick-only carrier never fires on a single click: walk
+    // past it (the row behind keeps its single-click verb).
+    while (el && el.getAttribute("data-fire-on") === "dblclick") {
+      el = el.parentElement && el.parentElement.closest(
+        "[data-set-pointer], [data-fire-pointer]");
+    }
+    if (!el || !el.id) return;
+    this.mutate(el.id);
+  }
+
+  // The double click fires the nodes that declared it. Same fire
+  // lane, same {id} on the wire — ``data-fire-on`` is CLIENT
+  // guidance only: the gesture decides WHEN, the node decides WHAT.
+  onDblClick(e) {
+    var el = e.target.closest
+      ? e.target.closest('[data-fire-on="dblclick"]') : null;
     if (!el || !el.id) return;
     this.mutate(el.id);
   }

@@ -28,7 +28,13 @@ _COLUMNS = (
     ("Suburb", "gnr-grid-cell"),
     ("State", "gnr-grid-cell"),
     ("Postcode", "gnr-grid-cell"),
+    ("Inv.", "gnr-grid-cell gnr-grid-num"),
+    ("Invoiced", "gnr-grid-cell gnr-grid-num"),
 )
+
+#: the editable customer fields, dialog and save share the list
+_FIELDS = ("account_name", "street_address", "suburb", "postcode",
+           "email", "phone")
 
 
 class Page(WsLivePage):
@@ -36,14 +42,35 @@ class Page(WsLivePage):
 
     @component
     def customer_row(self, root, node_label=None):
+        # The row label IS the record pkey: the identity baked on the
+        # row is directly the key of any per-record command.
         row = root.div(
             datapath="." + node_label, class_="gnr-grid-row",
             **{"data-set-pointer": f"{self.name}.selection.customer",
                "data-set-value": node_label})
-        row.div("^.account_name", class_="gnr-grid-cell")
+        # One node, one verb: the row keeps the single-click selection,
+        # the first cell carries the DOUBLE-click command (data-fire-on
+        # is client guidance — the wire stays an ordinary {id, value}).
+        row.div("^.account_name", class_="gnr-grid-cell",
+                **{"data-fire-pointer": "commands.edit_customer",
+                   "data-fire-value": node_label,
+                   "data-fire-on": "dblclick"})
         row.div("^.suburb", class_="gnr-grid-cell")
         row.div("^.state", class_="gnr-grid-cell")
         row.div("^.postcode", class_="gnr-grid-cell")
+        row.div("^.n_invoices", class_="gnr-grid-cell gnr-grid-num")
+        row.div("^.invoiced_total",
+                class_="gnr-grid-cell gnr-grid-num")
+
+    @component
+    def invoice_row(self, root, node_label=None):
+        # The customer's invoices, display-only: store-backed EAGER
+        # iterate (a handful of rows — laziness would be ceremony).
+        row = root.div(datapath="." + node_label, class_="gnr-grid-row")
+        row.div("^.inv_number", class_="gnr-grid-cell")
+        row.div("^.date", class_="gnr-grid-cell")
+        row.div("^.total", class_="gnr-grid-cell gnr-grid-num")
+        row.div("^.gross_total", class_="gnr-grid-cell gnr-grid-num")
 
     def setup(self, data):
         # The query lives on the anchor. ``state`` is declared as a
@@ -55,6 +82,7 @@ class Page(WsLivePage):
             "customers",
             BagCbResolver(self.load_customers, read_only=True, state=None),
         )
+        data.set_item("dialog.display", "none")
 
     def main(self, root):
         with self.db_access() as db:
@@ -89,9 +117,46 @@ class Page(WsLivePage):
             head.div(caption, class_=klass)
         grid.div(class_="gnr-grid-body").customer_row(
             iterate="^customers", lazy=True, id="customers")
+        # The customer dialog: a fixed overlay, shown and hidden by a
+        # DATUM. Its fields live in the store (dialog.customer.*) —
+        # mutable data, ordinary inputs: writeback for free. The grid
+        # stays throwaway; the record under edit is store-backed.
+        dialog = pane.div(class_="gnr-dialog", display="^dialog.display")
+        box = dialog.div(class_="gnr-dialog-box")
+        box.h2("Customer")
+        for field in _FIELDS:
+            frow = box.div(class_="gnr-dialog-row")
+            frow.html_label(field.replace("_", " "), color="#555555")
+            frow.input(value=f"^dialog.customer.{field}")
+        box.h3("Invoices", margin_bottom="4px")
+        inv = box.div(class_="gnr-grid gnr-grid-scroll "
+                             "dialog-invoices-grid")
+        inv_head = inv.div(class_="gnr-grid-edge").div(
+            class_="gnr-grid-row gnr-grid-head")
+        for caption, klass in (
+            ("Number", "gnr-grid-cell"), ("Date", "gnr-grid-cell"),
+            ("Total", "gnr-grid-cell gnr-grid-num"),
+            ("Gross", "gnr-grid-cell gnr-grid-num"),
+        ):
+            inv_head.div(caption, class_=klass)
+        inv.div(class_="gnr-grid-body").invoice_row(
+            iterate="^dialog.invoices", id="dialog_invoices")
+        buttons = box.div(class_="gnr-dialog-buttons")
+        buttons.button("Save", class_="gnr-grid-add",
+                       **{"data-fire-pointer": "commands.save_customer"})
+        buttons.button("Cancel", class_="gnr-grid-add",
+                       **{"data-fire-pointer": "commands.cancel_customer"})
         # The state click re-parameterizes the anchor: one attribute
         # write, and the lazy component re-renders — re-query included.
         pane.data_controller(func="set_state", state="^selection.state")
+        pane.data_controller(func="edit_customer",
+                             pkey="^commands.edit_customer")
+        pane.data_controller(
+            func="save_customer", trigger="^commands.save_customer",
+            pkey="=dialog.pkey",
+            **{field: f"=dialog.customer.{field}" for field in _FIELDS})
+        pane.data_controller(func="cancel_customer",
+                             trigger="^commands.cancel_customer")
 
     @staticmethod
     def set_state(node, state=None):
@@ -102,19 +167,97 @@ class Page(WsLivePage):
         node.SET("customers?state", state or "")
 
     def load_customers(self, state=None):
-        """The query — run ONCE per (re)render of the lazy component."""
+        """The query — run ONCE per (re)render of the lazy component.
+        Row labels are the record pkeys (base62, dot-free): identity.
+        """
         with self.db_access() as db:
             fetched = db.table("invc.customer").query(
-                columns="account_name,suburb,state,postcode",
+                columns=("$id,$account_name,$suburb,$state,$postcode,"
+                         "$n_invoices,$invoiced_total"),
                 where="$state = :st" if state else None,
                 st=state, order_by="$account_name",
             ).fetch()
             rows = Bag()
-            for i, record in enumerate(fetched, start=1):
+            for record in fetched:
                 row = Bag()
                 row["account_name"] = record["account_name"]
                 row["suburb"] = record["suburb"]
                 row["state"] = record["state"]
                 row["postcode"] = record["postcode"]
-                rows[f"r{i:04d}"] = row
+                # virtual columns of the legacy model: the customer
+                # already KNOWS its invoice count and turnover
+                row["n_invoices"] = record["n_invoices"] or None
+                if record["invoiced_total"]:
+                    row.set_item("invoiced_total",
+                                 record["invoiced_total"], mask="%.2f")
+                rows[record["id"]] = row
         return rows
+
+    @staticmethod
+    def edit_customer(node, pkey=None):
+        """Double click: load the WHOLE record and open the dialog.
+        Data-logic funcs are static: the PAGE arrives through the node
+        (``node.builder``), and with it the db unit of work.
+        """
+        if not pkey:
+            return
+        page = node.builder
+        with page.db_access() as db:
+            record = db.table("invc.customer").query(
+                columns=",".join(f"${f}" for f in ("id", *_FIELDS)),
+                where="$id = :pk", pk=pkey, addPkeyColumn=False,
+            ).fetch()[0]
+            fetched = db.table("invc.invoice").query(
+                columns="$id,$inv_number,$date,$total,$gross_total",
+                where="$customer_id = :pk", pk=pkey,
+                order_by="$date desc",
+            ).fetch()
+        invoices = Bag()
+        for inv in fetched:
+            row = Bag()
+            row["inv_number"] = inv["inv_number"]
+            row["date"] = str(inv["date"] or "")
+            row.set_item("total", inv["total"], mask="%.2f")
+            row.set_item("gross_total", inv["gross_total"], mask="%.2f")
+            invoices[inv["id"]] = row
+        node.SET("dialog.pkey", record["id"])
+        for field in _FIELDS:
+            node.SET(f"dialog.customer.{field}", record[field])
+        node.SET("dialog.invoices", invoices)
+        node.SET("dialog.display", "flex")
+
+    @staticmethod
+    def save_customer(node, trigger=None, pkey=None, **fields):
+        """Save: diff-update on the legacy table, commit (the author's
+        duty), close — and bump the anchor so the grid re-queries."""
+        if not trigger or not pkey:
+            return
+        page = node.builder
+        with page.db_access() as db:
+            tbl = db.table("invc.customer")
+            current = dict(tbl.query(
+                columns=",".join(f"${f}" for f in ("id", *_FIELDS)),
+                where="$id = :pk", pk=pkey, addPkeyColumn=False,
+            ).fetch()[0])
+            fresh = dict(current)
+            fresh.update(fields)
+            tbl.update(fresh, current)
+            db.commit()
+        page._close_dialog(node)
+        # Any anchor-attribute write re-renders the lazy component:
+        # fresh query, fresh marker, the client rebuilds and refills.
+        node.SET("customers?v", (node.GET("customers?v") or 0) + 1)
+
+    @staticmethod
+    def cancel_customer(node, trigger=None):
+        """Cancel: close and clear. The database never hears of it."""
+        if not trigger:
+            return
+        node.builder._close_dialog(node)
+
+    def _close_dialog(self, node):
+        node.SET("dialog.display", "none")
+        node.SET("dialog.pkey", None)
+        node.SET("dialog.invoices", None)
+        for field in _FIELDS:
+            node.SET(f"dialog.customer.{field}", None)

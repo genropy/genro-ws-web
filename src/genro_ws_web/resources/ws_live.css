@@ -226,11 +226,47 @@ body::after {
   grid-template-columns: 80px minmax(200px, 1fr) 110px;
 }
 .au-grid .gnr-grid-row {
-  grid-template-columns: minmax(220px, 1fr) 180px 80px 100px;
+  grid-template-columns: minmax(200px, 1fr) 160px 64px 90px 56px 110px;
 }
 /* Lazy placeholders: unfilled rows keep the row template (striping,
    borders) with a faint wash until their page lands. */
 .gnr-lazy-ph { background: #fafbfc; }
+
+/* Modal dialog: a fixed overlay (shown/hidden by a datum riding the
+   display style), the panel centered. */
+.gnr-dialog {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 40, 50, 0.35);
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+}
+.gnr-dialog-box {
+  background: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  padding: 16px 20px;
+  min-width: 400px;
+}
+.gnr-dialog-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+}
+.gnr-dialog-row label { width: 110px; }
+.gnr-dialog-row input { flex: 1; }
+.gnr-dialog-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.dialog-invoices-grid .gnr-grid-row {
+  grid-template-columns: 90px 110px 100px 100px;
+}
+.dialog-invoices-grid > .gnr-grid-body { max-height: 180px; }
 .scale-grid .gnr-grid-row > .gnr-grid-pinned:nth-child(1) { left: 0; }
 .scale-grid .gnr-grid-row > .gnr-grid-pinned:nth-child(2) { left: 64px; }
 
