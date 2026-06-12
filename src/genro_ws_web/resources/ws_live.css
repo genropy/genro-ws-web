@@ -267,3 +267,12 @@ body.source-view .CodeMirror {
   font-size: 12px;
   line-height: 1.45;
 }
+
+/* Selected row: the mark is DATA (the row's _selected field, moved by
+   the select_row controller); the visual is its attribute projection.
+   After zebra and hover: selection wins. */
+.gnr-grid-row[data-selected-row="true"]:not(.gnr-grid-head),
+.gnr-grid-row[data-selected-row="true"]:not(.gnr-grid-head):hover,
+.gnr-grid-pin .gnr-grid-row[data-selected-row="true"] > :first-child {
+  background: #d8e9fb;
+}

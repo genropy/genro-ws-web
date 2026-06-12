@@ -38,7 +38,15 @@ class ScaleGridPage(WsLivePage):
 
     @component
     def scale_row(self, root, node_label=None):
-        row = root.div(datapath="." + node_label, class_="gnr-grid-row")
+        # The row IS a selector: the click writes its label into the
+        # selection path (set-pointer lane, absolute by construction:
+        # the segment is the page name). The visual state rides the
+        # row's own _selected mark, moved by the select_row controller.
+        row = root.div(
+            datapath="." + node_label, class_="gnr-grid-row",
+            **{"data-set-pointer": f"{self.name}.selection.row",
+               "data-set-value": node_label,
+               "data-selected-row": "^._selected"})
         row.div(node_label, class_="gnr-grid-cell", font_weight="600")
         row.div("^.name", class_="gnr-grid-cell")
         row.div(class_="gnr-grid-cell gnr-grid-num").input(
@@ -84,8 +92,14 @@ class ScaleGridPage(WsLivePage):
         header.html_label("Rate (recomputes EVERY row)", color="#555555")
         header.input(value="^header.rate", dtype="N",
                      html_type="number", step="0.01", width="80px")
+        header.html_label("Selected", color="#555555", margin_left="16px")
+        header.span("^selection.row", font_weight="600")
         pane.button("+ add row", class_="gnr-grid-add",
                     **{"data-fire-pointer": "commands.add_row"})
+        # The legacy tris: a toolbar command with NO payload — the
+        # controller reads the selection itself (passive binding).
+        pane.button("− remove selected", class_="gnr-grid-add",
+                    **{"data-fire-pointer": "commands.del_selected"})
         grid = pane.div(
             class_="gnr-grid gnr-grid-scroll gnr-grid-pin scale-grid")
         head = grid.div(class_="gnr-grid-row gnr-grid-head")
@@ -105,6 +119,10 @@ class ScaleGridPage(WsLivePage):
         pane.data_controller(func="add_row", trigger="^commands.add_row")
         pane.data_controller(func="ins_row", label="^commands.ins_row")
         pane.data_controller(func="del_row", label="^commands.del_row")
+        pane.data_controller(func="select_row", selected="^selection.row")
+        pane.data_controller(func="del_selected",
+                             trigger="^commands.del_selected",
+                             label="=selection.row")
         pane.data_formula(destination="grand.total", func="grand_total",
                           rows="^rows", _on_start=True)
         pane.data_formula(destination="grand.converted",
@@ -155,6 +173,28 @@ class ScaleGridPage(WsLivePage):
         if not label:
             return
         node.data_handler.data.pop(node.abs_datapath(f"rows.{label}"))
+
+    @staticmethod
+    def select_row(node, selected=None):
+        """Move the _selected mark to the new row: two writes, two
+        per-row patches — the rest of the grid never travels."""
+        previous = node.GET("selection.marked")
+        if previous == selected:
+            return
+        if previous and node.GET(f"rows.{previous}") is not None:
+            node.SET(f"rows.{previous}._selected", None)
+        if selected and node.GET(f"rows.{selected}") is not None:
+            node.SET(f"rows.{selected}._selected", True)
+        node.PUT("selection.marked", selected)
+
+    @staticmethod
+    def del_selected(node, trigger=None, label=None):
+        """The toolbar command carries no payload: the selection IS the
+        argument (passive binding, read at compute time)."""
+        if not trigger or not label:
+            return
+        node.data_handler.data.pop(node.abs_datapath(f"rows.{label}"))
+        node.SET("selection.row", None)
 
     @staticmethod
     def row_total(qty, price):
