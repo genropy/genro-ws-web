@@ -12,6 +12,9 @@ first activation.
 ``SOURCE_HTML`` is the document that route serves: the page module's
 Python, escaped, in a read-only CodeMirror (CDN); the bare textarea
 is the graceful degradation when the CDN is unreachable.
+
+PoC: the colorpicker web component script rides next to the kernel
+for every page, until collection-driven serving (CMP.6) lands.
 """
 from __future__ import annotations
 
@@ -21,7 +24,9 @@ STARTUP_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <title>%(title)s</title>
 <link rel="stylesheet" href="../static?file=ws_live.css&v=%(v)s">
+<link rel="stylesheet" href="../static?file=components/tree/tree.css&v=%(v)s">
 <script src="../static?file=genro.js&v=%(v)s"></script>
+<script src="../static?file=components/colorpicker/colorpicker.js&v=%(v)s"></script>
 <script>var genro = new GenroClient({page: "%(page)s"});</script>
 </head>
 <body data-gnr-status="loading">
@@ -49,6 +54,43 @@ STARTUP_HTML = """<!DOCTYPE html>
     });
   });
 })();
+</script>
+</body>
+</html>
+"""
+
+#: CodeMirror mode by file extension — the gnride map, trimmed to the
+#: extensions the drawer serves; ``codefile`` falls back to plain text.
+EDITOR_MODE_BY_EXT = {
+    "py": "python",
+    "js": "javascript", "mjs": "javascript",
+    "css": "css",
+}
+
+CODEFILE_HTML = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>%(title)s</title>
+<link rel="stylesheet" href="static?file=ws_live.css&v=%(v)s">
+<link rel="stylesheet"
+ href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<script
+ src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script
+ src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/%(mode)s/%(mode)s.min.js"></script>
+</head>
+<body class="source-view">
+<textarea id="code" readonly>%(code)s</textarea>
+<script>
+if (window.CodeMirror) {
+  CodeMirror.fromTextArea(document.getElementById("code"), {
+    mode: "%(mode)s",
+    readOnly: true,
+    lineNumbers: true,
+    viewportMargin: Infinity,
+  });
+}
 </script>
 </body>
 </html>

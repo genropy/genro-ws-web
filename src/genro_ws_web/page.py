@@ -25,7 +25,18 @@ class _NodeAccessor:
         return self.builder.node_by_id(node_id)
 
 
-class WsLivePage(HtmlBuilder):
+class WsHtmlBuilder(HtmlBuilder):
+    """The ws dialect: HtmlBuilder plus the web-component citizens."""
+
+    def custom_require_sub_tag_validation(self, node: Any) -> bool:
+        """A web component is opaque to the HTML containment grammar:
+        a custom element may sit anywhere (the dash in the tag is the
+        platform's own escape hatch), so placement is the caller's
+        responsibility — the same rationale as components (CMP.5)."""
+        return not node._get_meta("webcomponent")
+
+
+class WsLivePage(WsHtmlBuilder):
     """HtmlBuilder for live content. Subclass and override ``main``."""
 
     #: a page that needs the legacy db declares it: the app drops it

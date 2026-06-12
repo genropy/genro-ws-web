@@ -318,6 +318,18 @@ class GenroClient {
   // element's identity: pointer and value are the SERVER node's
   // attributes.
   onClick(e) {
+    // `data-selectable` is CLIENT guidance, like `data-fire-on`: the
+    // clicked element takes `gnr-selected` within its named group —
+    // selection HIGHLIGHT is UI state (the datum rides the mutate).
+    var sel = e.target.closest
+      ? e.target.closest("[data-selectable]") : null;
+    if (sel) {
+      var group = sel.getAttribute("data-selectable");
+      document.querySelectorAll(
+        '[data-selectable="' + group + '"].gnr-selected'
+      ).forEach(function (n) { n.classList.remove("gnr-selected"); });
+      sel.classList.add("gnr-selected");
+    }
     var el = e.target.closest
       ? e.target.closest("[data-set-pointer], [data-fire-pointer]")
       : null;
@@ -343,7 +355,11 @@ class GenroClient {
 
   onInput(e) {
     var el = e.target;
-    if (!el || !el.matches("input, select, textarea")) return;
+    if (!el) return;
+    // A custom element (dash in the tag) exposing `value` speaks the
+    // input contract: shadow retargeting makes the HOST the target.
+    var isWidget = el.tagName.indexOf("-") > -1 && "value" in el;
+    if (!el.matches("input, select, textarea") && !isWidget) return;
     if (!el.id) return;
     // The wire carries WHO (the element id — a serial, or the derived
     // chain inside an expansion) and WHAT (the raw value). Path and

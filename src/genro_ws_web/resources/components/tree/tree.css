@@ -1,0 +1,67 @@
+/* Copyright 2025 Softwell S.r.l. - SPDX-License-Identifier: Apache-2.0 */
+/* tree — the structure is native <details>/<summary>; the row KIND
+   arrives as a class from the datum (gnr-ext-directory, gnr-ext-py). */
+
+.gnr-tree {
+  font-size: 0.95em;
+}
+
+.gnr-tree-row {
+  margin-left: 18px;
+}
+
+.gnr-tree > .gnr-tree-row {
+  margin-left: 0;
+}
+
+.gnr-tree-label {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  user-select: none;
+  outline: none;
+  display: inline-block;
+  list-style: none;
+}
+
+.gnr-tree-label::-webkit-details-marker {
+  display: none;
+}
+
+/* Disclosure marker: DIRECTORIES only, leaves keep the indent. */
+.gnr-ext-directory > .gnr-tree-label::before {
+  content: "\25B8";
+  display: inline-block;
+  width: 1.1em;
+  color: #444444;
+}
+
+.gnr-ext-directory[open] > .gnr-tree-label::before {
+  content: "\25BE";
+}
+
+.gnr-tree-row:not(.gnr-ext-directory) > .gnr-tree-label::before {
+  content: "";
+  display: inline-block;
+  width: 1.1em;
+}
+
+/* Folders and leaves dress apart. */
+.gnr-ext-directory > .gnr-tree-label {
+  font-weight: 600;
+  color: #2c5f8a;
+}
+
+.gnr-tree-row:not(.gnr-ext-directory) > .gnr-tree-label {
+  color: #333333;
+}
+
+.gnr-tree-label:hover {
+  background: #e8eef4;
+}
+
+/* The selected row (client UI state, `data-selectable`): a light
+   wash, so folder/leaf text colors stay readable as they are. */
+.gnr-tree-row > .gnr-tree-label.gnr-selected {
+  background: #c5dcf2;
+}

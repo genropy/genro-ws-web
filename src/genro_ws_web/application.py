@@ -45,7 +45,12 @@ from genro_builders.builder import BuilderHandler
 
 from . import demo
 from .connection import WsConnection
-from .startup_page import SOURCE_HTML, STARTUP_HTML
+from .startup_page import (
+    CODEFILE_HTML,
+    EDITOR_MODE_BY_EXT,
+    SOURCE_HTML,
+    STARTUP_HTML,
+)
 from .target import WsTargetWrapper
 
 try:
@@ -241,6 +246,32 @@ class WsLiveApp(AsgiApplication):
             "v": self.client_version,
         }
 
+    @route(meta_mime_type="text/html")
+    def codefile(self, path: str = "", v: str = "") -> str:
+        """Render ONE source file as a read-only CodeMirror document.
+
+        ``/<app>/codefile?path=<abs>`` — the file-drawer's editor tab
+        (the gnride ``openModuleToEditorStack`` viewer, demo grade).
+        The path is resolved and must live INSIDE this package's tree
+        (the same root the drawer mounts): anything else is refused
+        loudly. The CodeMirror mode comes from the extension
+        (``EDITOR_MODE_BY_EXT``, the gnride map).
+        """
+        if not path:
+            raise ValueError("path parameter required")
+        resolved = Path(path).resolve()
+        if not resolved.is_relative_to(_PACKAGE_DIR.resolve()):
+            raise ValueError(f"path outside the served tree: {path}")
+        if not resolved.is_file():
+            raise FileNotFoundError(f"file not found: {path}")
+        ext = resolved.suffix.lstrip(".").lower()
+        mode = EDITOR_MODE_BY_EXT.get(ext, "null")
+        return CODEFILE_HTML % {
+            "title": resolved.name, "mode": mode,
+            "code": html.escape(resolved.read_text(encoding="utf-8")),
+            "v": self.client_version,
+        }
+
     @route()
     def static(self, file: str = "", v: str = "") -> Path:
         """Serve a static resource (JS, CSS) from ``resources/``.
@@ -331,7 +362,7 @@ class WsLiveApp(AsgiApplication):
         """
         builder = self._live_builder(page, get_current_request().websocket)
         node = self._mutation_node(builder, id)
-        path, typed, fired = self._mutation_write(node, value)
+        path, typed, fired, write_attr = self._mutation_write(node, value)
         print(f"MUTATE page={page!r} id={id!r} raw={value!r} "
               f"-> path={path!r} typed={typed!r} fired={fired}", flush=True)
         handler = builder.handler
@@ -339,7 +370,7 @@ class WsLiveApp(AsgiApplication):
             if fired:
                 handler.data.set_item(path, typed, _fired=True)
             else:
-                handler.data.set_item(path, typed)
+                handler.data.set_item(path, typed, **(write_attr or {}))
         return {"ok": True}
 
     def _mutation_node(self, builder: Any, element_id: str) -> Any:
@@ -364,8 +395,8 @@ class WsLiveApp(AsgiApplication):
 
     def _mutation_write(
         self, node: Any, raw_value: Any,
-    ) -> tuple[str, Any, bool]:
-        """Derive destination, value and fired-ness from the resolved node.
+    ) -> tuple[str, Any, bool, dict | None]:
+        """Derive destination, value, fired-ness and write attributes.
 
         Four writable shapes: a ``value`` pointer (typed by the node's
         dtype), a ``checked`` pointer (booleans arrive already typed by
@@ -379,14 +410,22 @@ class WsLiveApp(AsgiApplication):
         datum), otherwise ``True``. A node with none of the four is
         not a mutation target; declaring both set and fire on one node
         is an authoring error.
+
+        ``data-set-value="#datapath"`` is the SELECTION shape (the
+        legacy tree's ``selectedPath`` contract): the write's value is
+        the clicked node's own row datapath (segmentless), and the row
+        datum's attributes ride as the write's attributes — the
+        ``itemFullPath + item.attr`` pair of the legacy setter. Readers
+        get the coordinates AND the companions in one node:
+        ``^sel.path`` / ``^sel.path?file_ext``.
         """
         attr = node.attr
         if node.pointer_type(attr.get("value")):
             path = node.abs_datapath(attr["value"])
             typed = self._typed_value(raw_value, attr.get("dtype"))
-            return path, typed, False
+            return path, typed, False, None
         if node.pointer_type(attr.get("checked")):
-            return node.abs_datapath(attr["checked"]), raw_value, False
+            return node.abs_datapath(attr["checked"]), raw_value, False, None
         set_pointer = attr.get("data-set-pointer")
         fire_pointer = attr.get("data-fire-pointer")
         if set_pointer and fire_pointer:
@@ -395,12 +434,23 @@ class WsLiveApp(AsgiApplication):
                 "declares both data-set-pointer and data-fire-pointer",
             )
         if set_pointer:
-            return set_pointer, attr.get("data-set-value"), False
+            set_value = attr.get("data-set-value")
+            if set_value == "#datapath":
+                row_path = node.abs_datapath(".")
+                data_node = node.builder.handler.data.get_node(row_path)
+                row_attr = dict(data_node.attr) if data_node is not None else {}
+                return set_pointer, row_path.split(".", 1)[1], False, row_attr
+            return set_pointer, set_value, False, None
         if fire_pointer:
             message = attr.get("data-fire-value")
-            if message is None:
+            if message == "#datapath":
+                # Same selection shape as the set lane: the MESSAGE is
+                # the firing node's own row datapath (segmentless) —
+                # the controller reads the row from the store by it.
+                message = node.abs_datapath(".").split(".", 1)[1]
+            elif message is None:
                 message = raw_value if raw_value is not None else True
-            return node.abs_datapath(fire_pointer), message, True
+            return node.abs_datapath(fire_pointer), message, True, None
         raise ValueError(
             f"mutation target {attr.get('id') or node.node_tag!r} "
             "is not writable",
