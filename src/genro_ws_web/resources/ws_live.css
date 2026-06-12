@@ -175,26 +175,33 @@ body::after {
   font-weight: 600;
 }
 
-/* Opt-in pinned first column (matters with horizontal scroll). The
-   pinned cell needs its own solid background per row state: a sticky
-   cell over a transparent row would let scrolled content bleed
-   through. */
-.gnr-grid-pin .gnr-grid-row > :first-child {
+/* Pinned columns: cells marked .gnr-grid-pinned stick while the rest
+   scrolls. The frozen pane wears its OWN tinted background per row
+   state (a sticky cell over a transparent row would let scrolled
+   content bleed through — and the tint marks the pane); the boundary
+   cell carries the divider. Left offsets are per-grid: they depend
+   on the column template. */
+.gnr-grid-pinned {
   position: sticky;
-  left: 0;
   z-index: 1;
-  background: #ffffff;
+  background: #f4f8fb;
 }
-.gnr-grid-pin .gnr-grid-row:nth-child(even):not(.gnr-grid-head) > :first-child {
-  background: #fafbfc;
+.gnr-grid-row:nth-child(even):not(.gnr-grid-head) > .gnr-grid-pinned {
+  background: #ecf2f8;
 }
-.gnr-grid-pin .gnr-grid-row:not(.gnr-grid-head):hover > :first-child {
-  background: #eef5fc;
+.gnr-grid-row:not(.gnr-grid-head):hover > .gnr-grid-pinned {
+  background: #e1edf9;
 }
-.gnr-grid-pin .gnr-grid-head > :first-child,
-.gnr-grid-pin .gnr-grid-footrow > :first-child {
+.gnr-grid-row[data-selected-row="true"] > .gnr-grid-pinned {
+  background: #cde3f8;
+}
+.gnr-grid-head > .gnr-grid-pinned,
+.gnr-grid-footrow > .gnr-grid-pinned {
   background: inherit;
-  z-index: 3;
+  z-index: 2;
+}
+.gnr-grid-pinned:has(+ :not(.gnr-grid-pinned)) {
+  border-right: 1px solid #c2d2e2;
 }
 .gnr-grid-ins {
   border: none;
@@ -215,6 +222,8 @@ body::after {
   grid-template-columns: 64px minmax(160px, 1fr) 90px 100px 110px 110px 76px;
   min-width: 880px;
 }
+.scale-grid .gnr-grid-row > .gnr-grid-pinned:nth-child(1) { left: 0; }
+.scale-grid .gnr-grid-row > .gnr-grid-pinned:nth-child(2) { left: 64px; }
 
 /* Shell: the fixed tab strip of the startup skeleton — the live page
    and its Python source (iframe on the source route, lazy). */
@@ -274,7 +283,6 @@ body.source-view .CodeMirror {
    the select_row controller); the visual is its attribute projection.
    After zebra and hover: selection wins. */
 .gnr-grid-row[data-selected-row="true"]:not(.gnr-grid-head),
-.gnr-grid-row[data-selected-row="true"]:not(.gnr-grid-head):hover,
-.gnr-grid-pin .gnr-grid-row[data-selected-row="true"] > :first-child {
+.gnr-grid-row[data-selected-row="true"]:not(.gnr-grid-head):hover {
   background: #d8e9fb;
 }

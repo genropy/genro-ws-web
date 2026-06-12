@@ -21,8 +21,8 @@ from genro_builders.builder import component
 from ..page import WsLivePage
 
 _COLUMNS = (
-    ("Row", "gnr-grid-cell"),
-    ("Name", "gnr-grid-cell"),
+    ("Row", "gnr-grid-cell gnr-grid-pinned"),
+    ("Name", "gnr-grid-cell gnr-grid-pinned"),
     ("Qty", "gnr-grid-cell gnr-grid-num"),
     ("Price", "gnr-grid-cell gnr-grid-num"),
     ("Total", "gnr-grid-cell gnr-grid-num"),
@@ -47,8 +47,10 @@ class ScaleGridPage(WsLivePage):
             **{"data-set-pointer": f"{self.name}.selection.row",
                "data-set-value": node_label,
                "data-selected-row": "^._selected"})
-        row.div(node_label, class_="gnr-grid-cell", font_weight="600")
-        row.div("^.name", class_="gnr-grid-cell")
+        row.div(node_label, class_="gnr-grid-cell gnr-grid-pinned",
+                font_weight="600")
+        row.div(class_="gnr-grid-cell gnr-grid-pinned").input(
+            value="^.name")
         row.div(class_="gnr-grid-cell gnr-grid-num").input(
             value="^.qty", dtype="L", html_type="number")
         row.div(class_="gnr-grid-cell gnr-grid-num").input(
@@ -101,7 +103,7 @@ class ScaleGridPage(WsLivePage):
         pane.button("− remove selected", class_="gnr-grid-add",
                     **{"data-fire-pointer": "commands.del_selected"})
         grid = pane.div(
-            class_="gnr-grid gnr-grid-scroll gnr-grid-pin scale-grid")
+            class_="gnr-grid gnr-grid-scroll scale-grid")
         # Three-box layout: header edge / scrolling body / footer edge.
         # The edges hide their overflow and mirror the body's
         # horizontal scroll (genro.js); the rows inside keep the
@@ -118,8 +120,8 @@ class ScaleGridPage(WsLivePage):
         # The grid footer: the totals live in their own columns.
         foot = grid.div(class_="gnr-grid-edge").div(
             class_="gnr-grid-row gnr-grid-footrow")
-        foot.div("Totals", class_="gnr-grid-cell")
-        foot.div(class_="gnr-grid-cell")
+        foot.div("Totals", class_="gnr-grid-cell gnr-grid-pinned")
+        foot.div(class_="gnr-grid-cell gnr-grid-pinned")
         foot.div(class_="gnr-grid-cell")
         foot.div(class_="gnr-grid-cell")
         foot.div("^grand.total", class_="gnr-grid-cell gnr-grid-num")
