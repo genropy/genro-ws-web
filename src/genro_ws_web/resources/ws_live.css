@@ -219,8 +219,8 @@ body::after {
   grid-template-columns: 44px minmax(120px, 1fr) 90px 64px 96px 96px 76px;
 }
 .scale-grid .gnr-grid-row {
-  grid-template-columns: 64px minmax(160px, 1fr) 90px 100px 110px 110px 76px;
-  min-width: 880px;
+  grid-template-columns: 64px minmax(160px, 1fr) 90px 100px 110px 110px;
+  min-width: 804px;
 }
 .scale-grid .gnr-grid-row > .gnr-grid-pinned:nth-child(1) { left: 0; }
 .scale-grid .gnr-grid-row > .gnr-grid-pinned:nth-child(2) { left: 64px; }

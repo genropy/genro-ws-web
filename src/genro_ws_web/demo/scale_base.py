@@ -27,7 +27,6 @@ _COLUMNS = (
     ("Price", "gnr-grid-cell gnr-grid-num"),
     ("Total", "gnr-grid-cell gnr-grid-num"),
     ("Converted", "gnr-grid-cell gnr-grid-num"),
-    ("", "gnr-grid-cell"),
 )
 
 
@@ -58,14 +57,6 @@ class ScaleGridPage(WsLivePage):
         row.div("^.total", class_="gnr-grid-cell gnr-grid-num")
         row.div("^.converted", class_="gnr-grid-cell gnr-grid-num",
                 color="#2c5f8a")
-        commands = row.div(class_="gnr-grid-cell")
-        commands.button("+", class_="gnr-grid-ins",
-                        title="insert a row above this one",
-                        **{"data-fire-pointer": "commands.ins_row",
-                           "data-fire-value": node_label})
-        commands.button("−", class_="gnr-grid-del", title="remove this row",
-                        **{"data-fire-pointer": "commands.del_row",
-                           "data-fire-value": node_label})
         row.data_formula(destination=".total", func="row_total",
                          qty="^.qty", price="^.price")
         row.data_formula(destination=".converted", func="convert",
@@ -126,8 +117,8 @@ class ScaleGridPage(WsLivePage):
         foot.div(class_="gnr-grid-cell")
         foot.div("^grand.total", class_="gnr-grid-cell gnr-grid-num")
         foot.div("^grand.converted", class_="gnr-grid-cell gnr-grid-num")
-        foot.div(class_="gnr-grid-cell")
-        pane.data_controller(func="add_row", trigger="^commands.add_row")
+        pane.data_controller(func="add_row", trigger="^commands.add_row",
+                             label="=selection.row")
         pane.data_controller(func="ins_row", label="^commands.ins_row")
         pane.data_controller(func="del_row", label="^commands.del_row")
         pane.data_controller(func="select_row", selected="^selection.row")
@@ -141,7 +132,10 @@ class ScaleGridPage(WsLivePage):
                           _on_start=True)
 
     @staticmethod
-    def add_row(node, trigger=None):
+    def add_row(node, trigger=None, label=None):
+        """The toolbar "+": a fresh row AFTER the selected one (the
+        selection is a passive binding, read at compute time, like
+        del_selected); with no selection the row appends at the end."""
         if not trigger:
             return
         rows = node.GET("rows")
@@ -155,7 +149,13 @@ class ScaleGridPage(WsLivePage):
         row["price"] = 0.0
         row["total"] = 0.0
         row["converted"] = 0.0
-        node.SET(f"rows.r{ordinal}", row)
+        if label and node.GET(f"rows.{label}") is not None:
+            node.data_handler.data.set_item(
+                node.abs_datapath(f"rows.r{ordinal}"), row,
+                node_position=f">{label}",
+            )
+        else:
+            node.SET(f"rows.r{ordinal}", row)
 
     @staticmethod
     def ins_row(node, label=None):
