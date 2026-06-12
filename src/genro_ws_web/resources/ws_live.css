@@ -152,6 +152,17 @@ body::after {
   font-weight: 600;
 }
 
+/* Opt-in scrolling: cap the container, the header stays visible. */
+.gnr-grid-scroll {
+  max-height: 65vh;
+  overflow-y: auto;
+}
+.gnr-grid-scroll .gnr-grid-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 /* Column templates: one class per grid shape. */
 .invoice-grid .gnr-grid-row {
   grid-template-columns: 44px minmax(120px, 1fr) 90px 64px 96px 96px 36px;

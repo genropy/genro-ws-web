@@ -81,7 +81,7 @@ class ScaleGridPage(WsLivePage):
                      html_type="number", step="0.01", width="80px")
         pane.button("+ add row", class_="gnr-grid-add",
                     **{"data-fire-pointer": "commands.add_row"})
-        grid = pane.div(class_="gnr-grid scale-grid")
+        grid = pane.div(class_="gnr-grid gnr-grid-scroll scale-grid")
         head = grid.div(class_="gnr-grid-row gnr-grid-head")
         for caption, klass in _COLUMNS:
             head.div(caption, class_=klass)
