@@ -156,6 +156,9 @@ body::after {
 .invoice-grid .gnr-grid-row {
   grid-template-columns: 44px minmax(120px, 1fr) 90px 64px 96px 96px 36px;
 }
+.scale-grid .gnr-grid-row {
+  grid-template-columns: 64px minmax(120px, 1fr) 80px 90px 100px 100px 36px;
+}
 
 /* Shell: the fixed tab strip of the startup skeleton — the live page
    and its Python source (iframe on the source route, lazy). */
