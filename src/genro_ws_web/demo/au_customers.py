@@ -41,7 +41,7 @@ class Page(WsLivePage):
     requires_db = True
 
     @component
-    def customer_row(self, root, node_label=None):
+    def customerRow(self, root, node_label=None):
         # The row label IS the record pkey: the identity baked on the
         # row is directly the key of any per-record command.
         row = root.div(
@@ -63,7 +63,7 @@ class Page(WsLivePage):
                 class_="gnr-grid-cell gnr-grid-num")
 
     @component
-    def invoice_row(self, root, node_label=None):
+    def invoiceRow(self, root, node_label=None):
         # The customer's invoices, display-only: store-backed EAGER
         # iterate (a handful of rows — laziness would be ceremony).
         row = root.div(datapath="." + node_label, class_="gnr-grid-row")
@@ -115,7 +115,7 @@ class Page(WsLivePage):
             class_="gnr-grid-row gnr-grid-head")
         for caption, klass in _COLUMNS:
             head.div(caption, class_=klass)
-        grid.div(class_="gnr-grid-body").customer_row(
+        grid.div(class_="gnr-grid-body").customerRow(
             iterate="^customers", lazy=True, id="customers")
         # The customer dialog: a fixed overlay, shown and hidden by a
         # DATUM. Its fields live in the store (dialog.customer.*) —
@@ -139,7 +139,7 @@ class Page(WsLivePage):
             ("Gross", "gnr-grid-cell gnr-grid-num"),
         ):
             inv_head.div(caption, class_=klass)
-        inv.div(class_="gnr-grid-body").invoice_row(
+        inv.div(class_="gnr-grid-body").invoiceRow(
             iterate="^dialog.invoices", id="dialog_invoices")
         buttons = box.div(class_="gnr-dialog-buttons")
         buttons.button("Save", class_="gnr-grid-add",

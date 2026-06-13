@@ -7,15 +7,15 @@ real identity (``target_id``): every zone and pane is individually
 patchable, and an <iframe> hosted inside survives the updates around
 it (the client morph never disconnects matched elements).
 
-- ``border_container``: a CSS grid with named areas (top /
+- ``borderContainer``: a CSS grid with named areas (top /
   left-center-right / bottom), the LEGACY contract: any CHILD
   declares its region as an attribute — ``bc.div(region="left",
   width="320px", splitter=True)``, a nested
-  ``border_container(region="center")`` included — and the shared css
+  ``borderContainer(region="center")`` included — and the shared css
   places it. Sizes live ON the regioned child; an absent region
   collapses by itself (auto tracks); ``splitter=True`` gets the
   draggable bar (client guidance, the kernel plants it).
-- ``tab_container`` / ``tab``: the selected key lives in DATA
+- ``tabContainer`` / ``tab``: the selected key lives in DATA
   (``selected="^ui.tab"``), the click IS a mutation (the tab strip
   carries ``data-set-pointer``/``data-set-value``, the client
   translates the click into ``setData``). Visibility is pure CSS: a
@@ -29,9 +29,9 @@ Usage::
 
     class Page(HtmlBuilder, HtmlContainersBase):
         def main(self, root):
-            bc = root.border_container(height="100vh")
+            bc = root.borderContainer(height="100vh")
             bc.div(region="top", height="48px").h1("Header")
-            tc = bc.div(region="center").tab_container(
+            tc = bc.div(region="center").tabContainer(
                 selected_page="^ui.tab")
             tc.tab("First", key="one").div("...")
             tc.tab("Second", key="two", closable=True).iframe(src="widgets")
@@ -67,8 +67,8 @@ class HtmlContainersBase:
 
     # Explicit dispatch name: the legacy prefix-strip rule would turn
     # the compound name into "container" (a collision).
-    @container("border_container")
-    def border_container(self, pane, design="headline", **attrs):
+    @container("borderContainer")
+    def borderContainer(self, pane, design="headline", **attrs):
         """``design`` is the legacy pair: ``headline`` (top/bottom span
         the full width) or ``sidebar`` (left/right span the full
         height)."""
@@ -77,7 +77,7 @@ class HtmlContainersBase:
                 f"unknown design {design!r}: one of {tuple(_BC_DESIGNS)}",
             )
         return pane.div(
-            class_="gnr-border-container",
+            class_="gnr-bordercontainer",
             display="grid",
             grid_template_areas=_BC_DESIGNS[design],
             grid_template_rows="auto 1fr auto",
@@ -89,8 +89,8 @@ class HtmlContainersBase:
     # tab container — selected in data, click is a mutation, CSS shows
     # ------------------------------------------------------------------
 
-    @container("tab_container")
-    def tab_container(self, pane, selected=None, selected_page=None,
+    @container("tabContainer")
+    def tabContainer(self, pane, selected=None, selected_page=None,
                       tabs_position="top", **attrs):
         """The shell: tab strip + panes. The LEGACY pair:
         ``selected_page`` is the reactive pointer to the selected page
@@ -100,7 +100,7 @@ class HtmlContainersBase:
         ``tabs_position`` puts the strip on one of the four sides."""
         if selected_page is None:
             raise ValueError(
-                "tab_container() requires a selected_page pointer",
+                "tabContainer() requires a selected_page pointer",
             )
         if tabs_position not in _TAB_POSITIONS:
             raise ValueError(

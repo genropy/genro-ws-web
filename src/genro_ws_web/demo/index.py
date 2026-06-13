@@ -39,7 +39,7 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
         self.set_data("shell.pages", store)
 
     def main(self, root):
-        bc = root.border_container(height="calc(100vh - 80px)")
+        bc = root.borderContainer(height="calc(100vh - 80px)")
         left = bc.div(region="left", width="320px", splitter=True,
                       overflow="auto", padding="8px",
                       border_right="1px solid #c8c8c8",
@@ -55,7 +55,7 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
 
         center = bc.div(region="center", overflow="auto", padding="8px")
         shell = center.div(datapath="shell", height="100%")
-        self._shell_tabs = shell.tab_container(selected_page="^.current")
+        self._shell_tabs = shell.tabContainer(selected_page="^.current")
 
     # -------------------------------------------------------- data logic
     @staticmethod

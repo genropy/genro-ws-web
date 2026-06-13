@@ -36,7 +36,7 @@ class ScaleGridPage(WsLivePage):
     rows_count = 0
 
     @component
-    def scale_row(self, root, node_label=None):
+    def scaleRow(self, root, node_label=None):
         # The row IS a selector: the click writes its label into the
         # selection path (set-pointer lane, absolute by construction:
         # the segment is the page name). The visual state rides the
@@ -114,7 +114,7 @@ class ScaleGridPage(WsLivePage):
         # broadcast replaces the body, never header or footer.
         # Store-backed lazy: the collection lives in the store and
         # stays fully editable; the render pages with the scroll.
-        grid.div(class_="gnr-grid-body").scale_row(
+        grid.div(class_="gnr-grid-body").scaleRow(
             iterate="^rows", lazy=True, id="rows")
         # The grid footer: the totals live in their own columns.
         foot = grid.div(class_="gnr-grid-edge").div(

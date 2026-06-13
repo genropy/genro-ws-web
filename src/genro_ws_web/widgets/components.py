@@ -8,7 +8,7 @@ name in the source is the cross-runtime contract (CMP.1). A reactive
 ``value`` pointer passes through to the inner ``<input>`` (CMP.4), so
 the widget both displays AND writes back.
 
-``labeled_field`` composes a widget with its label inside a bordered
+``labeledField`` composes a widget with its label inside a bordered
 box (component-in-component, CMP.8). Styling is inline-minimal with
 class hooks (``gnr-field``, ``gnr-field-label``) for CSS overrides;
 the collection will carry its own stylesheet when ``cssrequires``
@@ -18,7 +18,7 @@ Usage::
 
     class Page(HtmlBuilder, HtmlComponentsBase):
         def main(self, root):
-            root.labeled_field(label="Born", kind="datepicker",
+            root.labeledField(label="Born", kind="datepicker",
                                value="^.born", border=True, rounded=True)
 
 Fillable containers (border/tab/stack) are the OTHER citizen
@@ -141,11 +141,11 @@ class HtmlComponentsBase:
         box.html_label(label, **label_attrs)
 
     # ------------------------------------------------------------------
-    # labeled_field — label + widget in a bordered box
+    # labeledField — label + widget in a bordered box
     # ------------------------------------------------------------------
 
     @component
-    def labeled_field(self, root, label="", lbl=None, kind=None, dtype=None,
+    def labeledField(self, root, label="", lbl=None, kind=None, dtype=None,
                       value=None, label_position="top", border=True,
                       rounded=False, **attrs):
         """A widget with its label: ``top`` (above, left-aligned) or

@@ -457,7 +457,7 @@ class GenroClient {
     var edges = { left: "right", right: "left",
                   top: "bottom", bottom: "top" };
     main.querySelectorAll(
-      ".gnr-border-container > [region][splitter]"
+      ".gnr-bordercontainer > [region][splitter]"
     ).forEach(function (region) {
       if (region._gnrSplitter) return;
       region._gnrSplitter = true;

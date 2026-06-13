@@ -3,8 +3,8 @@
 
 The legacy ``pane.tree(storepath=...)`` refounded on the existing
 lanes, no client code: the structure renders from the store Bag, one
-``tree_branch`` expansion per node, RECURSIVE (a directory row plants
-another ``tree_branch`` over its own value — nested iterate, the
+``treeBranch`` expansion per node, RECURSIVE (a directory row plants
+another ``treeBranch`` over its own value — nested iterate, the
 ``cmp_nested_iterate`` mechanics applied to itself).
 
 - expansion/collapse is ``<details>/<summary>``: BROWSER state, no
@@ -67,11 +67,11 @@ class TreeCollection:
         # row anchor lives UNDER its store root, whatever the depth.
         store_key = box.abs_datapath(store).split(".", 1)[1]
         registry[store_key] = cfg
-        box.tree_branch(iterate=store, id=f"tree_{wid}")
+        box.treeBranch(iterate=store, id=f"tree_{wid}")
         return box
 
     @component
-    def tree_branch(self, root, node_label=None):
+    def treeBranch(self, root, node_label=None):
         """ONE row of the tree, recursive: a Bag-valued row plants the
         next level over its own value (``iterate="^."``); a leaf row
         iterates None and closes the recursion."""
@@ -101,7 +101,7 @@ class TreeCollection:
                           "data-fire-on": "dblclick"}
         summary.span(f"^.?{cfg['label_attribute']}",
                      class_="gnr-tree-caption", **caption_kw)
-        row.tree_branch(iterate="^.")
+        row.treeBranch(iterate="^.")
 
     def _tree_cfg_for(self, anchor: str) -> dict:
         """The tree config owning ``anchor``: the longest registered

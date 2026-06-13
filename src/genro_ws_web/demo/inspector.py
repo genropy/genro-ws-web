@@ -85,7 +85,7 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
 
     # ----------------------------------------------------------- the page
     def main(self, root):
-        bc = root.border_container(height="calc(100vh - 80px)")
+        bc = root.borderContainer(height="calc(100vh - 80px)")
         left = bc.div(region="left", width="280px", splitter=True,
                       overflow="auto", padding="8px",
                       border_right="1px solid #c8c8c8",
@@ -104,10 +104,10 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
 
         center = bc.div(region="center", overflow="auto", padding="8px")
         insp = center.div(datapath="insp", height="100%")
-        tc = insp.tab_container(selected_page="^.tab")
+        tc = insp.tabContainer(selected_page="^.tab")
 
         src = tc.tab("Source", key="source")
-        sbc = src.border_container(height="calc(100vh - 190px)",
+        sbc = src.borderContainer(height="calc(100vh - 190px)",
                                    design="sidebar")
         sleft = sbc.div(region="left", width="50%", splitter=True,
                         overflow="auto", padding="4px")
@@ -120,7 +120,7 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
                       font_size="0.85em", margin="0")
 
         dat = tc.tab("Data", key="data")
-        dbc = dat.border_container(height="calc(100vh - 190px)",
+        dbc = dat.borderContainer(height="calc(100vh - 190px)",
                                    design="sidebar")
         dleft = dbc.div(region="left", width="50%", splitter=True,
                         overflow="auto", padding="4px")

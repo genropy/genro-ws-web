@@ -32,7 +32,7 @@ class Page(WsLivePage):
     rows_count = 3000
 
     @component
-    def catalog_row(self, root, node_label=None):
+    def catalogRow(self, root, node_label=None):
         row = root.div(datapath="." + node_label, class_="gnr-grid-row",
                        **{"data-set-pointer": f"{self.name}.selection.row",
                           "data-set-value": node_label})
@@ -60,7 +60,7 @@ class Page(WsLivePage):
         for caption, klass in _COLUMNS:
             head.div(caption, class_=klass)
         # ...and lazy=True on the iterate. The rest is machinery.
-        grid.div(class_="gnr-grid-body").catalog_row(
+        grid.div(class_="gnr-grid-body").catalogRow(
             iterate="^catalog", lazy=True, id="catalog")
 
     def load_catalog(self):

@@ -1,7 +1,7 @@
 # Copyright 2025 Softwell S.r.l. - SPDX-License-Identifier: Apache-2.0
 """Component, iterated: one declaration, one expansion per store row.
 
-``state_row`` iterates the ``^states`` store: the row identity is the
+``stateRow`` iterates the ``^states`` store: the row identity is the
 bag LABEL (VIC, NSW, ...) and it enters the derived id chain — every
 input is individually addressable. Edit a name or a population: only
 THAT row's datum changes; the totals recompute server-side.
@@ -18,7 +18,7 @@ PAGE_TITLE = "Components 3 — iterate"
 
 class Page(WsLivePage):
     @component
-    def state_row(self, root, node_label=None):
+    def stateRow(self, root, node_label=None):
         row = root.tr(datapath="." + node_label)
         row.td(node_label, font_weight="600", padding="4px 10px")
         cell_name = row.td(padding="4px 10px")
@@ -47,7 +47,7 @@ class Page(WsLivePage):
         for caption in ("Code", "Name", "Population"):
             head.th(caption, text_align="left", padding="4px 10px",
                     border_bottom="2px solid #c8c8c8")
-        table.state_row(iterate="^states")
+        table.stateRow(iterate="^states")
         pane.data_formula(destination="total", func="total_population",
                           states="^states", _on_start=True)
         out = pane.p(padding="8px", background="#f0f4f8")

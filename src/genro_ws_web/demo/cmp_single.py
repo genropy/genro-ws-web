@@ -1,7 +1,7 @@
 # Copyright 2025 Softwell S.r.l. - SPDX-License-Identifier: Apache-2.0
 """Component, single: one @component used several times.
 
-``field_row`` is a closed component (CMP.1): the caller parameterizes
+``fieldRow`` is a closed component (CMP.1): the caller parameterizes
 it, the expansion builds label + input. The reactive ``value`` pointer
 passes through to the inner <input> (CMP.4) with its dtype on the
 NODE: edit any field and the typed write lands at the pointer — the
@@ -19,7 +19,7 @@ PAGE_TITLE = "Components 1 — single"
 
 class Page(WsLivePage):
     @component
-    def field_row(self, root, label="", value=None, dtype=None, **attrs):
+    def fieldRow(self, root, label="", value=None, dtype=None, **attrs):
         row = root.div(display="flex", gap="8px", align_items="center",
                        margin_bottom="6px")
         row.html_label(label, width="90px", color="#555555")
@@ -39,10 +39,10 @@ class Page(WsLivePage):
         pane.p("One @component, used three times. Every input is an "
                "expansion node: the mutation travels by derived id, "
                "the node types it.")
-        pane.field_row(label="Label", value="^.label")
-        pane.field_row(label="Width", value="^.width", dtype="L",
+        pane.fieldRow(label="Label", value="^.label")
+        pane.fieldRow(label="Width", value="^.width", dtype="L",
                        html_type="number")
-        pane.field_row(label="Height", value="^.height", dtype="L",
+        pane.fieldRow(label="Height", value="^.height", dtype="L",
                        html_type="number")
         pane.data_formula(destination=".area", func="box_area",
                           width="^.width", height="^.height",

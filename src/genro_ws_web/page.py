@@ -45,11 +45,12 @@ def webcomponent(
 ) -> Callable:
     """Declare a web-component-backed element. Sugar over ``@element``:
     derives the custom-element tag from the method name (``gnr-<name>``,
-    dashes for underscores) and marks the node ``webcomponent`` so the
-    dialect exempts it from HTML containment (CMP.5). ``tag`` overrides
-    the derived name; ``sub_tags`` opens it to children (slots)."""
+    lowercased — a camelCase name folds to one word) and marks the node
+    ``webcomponent`` so the dialect exempts it from HTML containment
+    (CMP.5). ``tag`` overrides the derived name; ``sub_tags`` opens it
+    to children (slots)."""
     def decorator(func: Callable) -> Any:
-        render_tag = f"gnr-{tag or func.__name__.replace('_', '-')}"
+        render_tag = f"gnr-{(tag or func.__name__).lower()}"
         meta = {"webcomponent": True, "render_tag": render_tag, **extra_meta}
         return element(sub_tags=sub_tags, _meta=meta)(func)
     return decorator

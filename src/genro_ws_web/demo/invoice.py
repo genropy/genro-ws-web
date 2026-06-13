@@ -44,7 +44,7 @@ _COLUMNS = (
 
 class Page(WsLivePage):
     @component
-    def invoice_row(self, root, node_label=None):
+    def invoiceRow(self, root, node_label=None):
         row = root.div(datapath="." + node_label, class_="gnr-grid-row")
         row.div(node_label, class_="gnr-grid-cell", font_weight="600")
         row.div(class_="gnr-grid-cell").input(value="^.description")
@@ -111,7 +111,7 @@ class Page(WsLivePage):
         head = grid.div(class_="gnr-grid-row gnr-grid-head")
         for caption, klass in _COLUMNS:
             head.div(caption, class_=klass)
-        grid.invoice_row(iterate="^rows")
+        grid.invoiceRow(iterate="^rows")
         # The grid footer: the totals live in their own columns.
         foot = grid.div(class_="gnr-grid-row gnr-grid-footrow")
         foot.div("Totals", class_="gnr-grid-cell")

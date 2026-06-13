@@ -82,7 +82,7 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
     # ----------------------------------------------------------- the page
     def main(self, root):
         # The gnride frame: drawer on the LEFT, editor stack CENTER.
-        bc = root.border_container(height="calc(100vh - 80px)")
+        bc = root.borderContainer(height="calc(100vh - 80px)")
         left = bc.div(region="left", width="320px", splitter=True,
                       overflow="auto", padding="8px",
                       border_right="1px solid #c8c8c8",
@@ -101,11 +101,11 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
 
         center = bc.div(region="center", overflow="auto", padding="8px")
         editor = center.div(datapath="editor", height="100%")
-        # The editor stack: a REAL tab_container (panes are live source
+        # The editor stack: a REAL tabContainer (panes are live source
         # nodes; switching tabs is an attribute-only morph — iframes
         # never reload). The handle parks on the instance: the rule
         # plants the runtime tabs there.
-        self._editor_tabs = editor.tab_container(selected_page="^.current")
+        self._editor_tabs = editor.tabContainer(selected_page="^.current")
 
     # -------------------------------------------------------- data logic
     @staticmethod

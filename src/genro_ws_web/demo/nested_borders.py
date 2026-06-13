@@ -6,7 +6,7 @@ frame built with the outer ``design="headline"`` (top/bottom span the
 full width) and ``design="sidebar"`` (left/right span the full
 height). Inside each: three levels of border containers — every
 region is a CHILD declaring ``region=`` (a nested
-``border_container(region=...)`` included, the legacy gesture
+``borderContainer(region=...)`` included, the legacy gesture
 verbatim) and ``splitter=True`` plants the drag bar on the region's
 inner edge. Sizes are client UI state.
 """
@@ -28,20 +28,20 @@ class Page(WsLivePage, HtmlContainersBase):
         self.set_data("ui.inner_sidebar", "uno")
 
     def main(self, root):
-        tc = root.tab_container(selected_page="^ui.design")
+        tc = root.tabContainer(selected_page="^ui.design")
         self._frame(tc.tab("Headline", key="headline"), "headline")
         self._frame(tc.tab("Sidebar", key="sidebar"), "sidebar")
 
     def _frame(self, pane, design):
         """The same nested structure, outer design as asked."""
-        bc = pane.border_container(design=design,
+        bc = pane.borderContainer(design=design,
                                    height="calc(100vh - 140px)")
         bc.div(region="top", height="56px", splitter=True,
                background="#2c5f8a", color="#ffffff", padding="8px",
                ).span(f"L1 top ({design})")
-        # A border_container nested in a SIDE region (any region works:
+        # A borderContainer nested in a SIDE region (any region works:
         # the css child selector scopes each grid to its own children).
-        side = bc.border_container(region="left", width="200px",
+        side = bc.borderContainer(region="left", width="200px",
                                    splitter=True, min_width="0")
         side.div(region="top", height="40px", splitter=True,
                  background="#cfe0ef", padding="8px",
@@ -55,10 +55,10 @@ class Page(WsLivePage, HtmlContainersBase):
                background="#e6e6e6", padding="8px",
                ).span("L1 bottom")
 
-        # The oracle's gesture: a border_container IS the region child;
+        # The oracle's gesture: a borderContainer IS the region child;
         # the inner frame shows the OTHER design than the outer one.
         inner_design = "sidebar" if design == "headline" else "headline"
-        inner = bc.border_container(region="center", design=inner_design,
+        inner = bc.borderContainer(region="center", design=inner_design,
                                     min_height="0")
         inner.div(region="left", width="180px", splitter=True,
                   background="#dcebdc", padding="8px",
@@ -67,7 +67,7 @@ class Page(WsLivePage, HtmlContainersBase):
                   background="#f3e3f3", padding="8px",
                   ).span("L2 bottom")
 
-        third = inner.border_container(region="center", min_height="0")
+        third = inner.borderContainer(region="center", min_height="0")
         third.div(region="top", height="48px", splitter=True,
                   background="#fbe9d0", padding="8px",
                   ).span("L3 top")
@@ -81,13 +81,13 @@ class Page(WsLivePage, HtmlContainersBase):
         # Tabs INSIDE borders inside tabs: closable pages (the ✕ pops
         # them from the structure) and the legacy selected pair —
         # selected_page (key) plus selected (index), both on display.
-        itc = center.tab_container(
+        itc = center.tabContainer(
             selected_page=f"^ui.inner_{design}",
             selected=f"^ui.inner_idx_{design}")
         itc.tab("Uno", key="uno", closable=True,
                 ).p("first inner page — close me")
         due = itc.tab("Due", key="due", closable=True)
-        ibc = due.border_container(height="160px")
+        ibc = due.borderContainer(height="160px")
         ibc.div(region="left", width="120px", splitter=True,
                 background="#e8eef4", padding="6px",
                 ).span("bc in tab")
