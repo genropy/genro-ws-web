@@ -10,8 +10,10 @@ into the main div; later mutations travel as patches.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
+from genro_builders.builder import element
 from genro_builders.contrib.html import HtmlBuilder
 
 
@@ -34,6 +36,23 @@ class WsHtmlBuilder(HtmlBuilder):
         platform's own escape hatch), so placement is the caller's
         responsibility — the same rationale as components (CMP.5)."""
         return not node._get_meta("webcomponent")
+
+
+def webcomponent(
+    tag: str | None = None,
+    sub_tags: str | tuple[str, ...] = "",
+    **extra_meta: Any,
+) -> Callable:
+    """Declare a web-component-backed element. Sugar over ``@element``:
+    derives the custom-element tag from the method name (``gnr-<name>``,
+    dashes for underscores) and marks the node ``webcomponent`` so the
+    dialect exempts it from HTML containment (CMP.5). ``tag`` overrides
+    the derived name; ``sub_tags`` opens it to children (slots)."""
+    def decorator(func: Callable) -> Any:
+        render_tag = f"gnr-{tag or func.__name__.replace('_', '-')}"
+        meta = {"webcomponent": True, "render_tag": render_tag, **extra_meta}
+        return element(sub_tags=sub_tags, _meta=meta)(func)
+    return decorator
 
 
 class WsLivePage(WsHtmlBuilder):

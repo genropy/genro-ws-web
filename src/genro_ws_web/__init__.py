@@ -10,6 +10,7 @@ Public surface:
 - ``WsLiveApp`` — the ASGI application (startup page, WSX ``main`` and
   ``mutate``, server tickers).
 - ``WsLivePage`` — the page base: subclass, override ``main(root)``.
+- ``webcomponent`` — decorator for web-component-backed elements.
 - ``WsTargetWrapper`` — the connection-bound render destination.
 - ``widgets`` — the effective widget kit (``HtmlComponentsBase``,
   ``HtmlContainersBase``).
@@ -18,7 +19,7 @@ Public surface:
 from __future__ import annotations
 
 from .application import WsLiveApp
-from .page import WsLivePage
+from .page import WsLivePage, webcomponent
 from .target import WsTargetWrapper
 from .widgets import DTYPE_KINDS, HtmlComponentsBase, HtmlContainersBase
 
@@ -31,4 +32,5 @@ __all__ = [
     "WsLiveApp",
     "WsLivePage",
     "WsTargetWrapper",
+    "webcomponent",
 ]

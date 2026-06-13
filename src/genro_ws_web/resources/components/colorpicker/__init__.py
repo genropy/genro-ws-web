@@ -13,7 +13,7 @@ browser's.
 """
 from __future__ import annotations
 
-from genro_builders.builder import element
+from genro_ws_web import webcomponent
 
 
 class ColorPickerCollection:
@@ -21,7 +21,6 @@ class ColorPickerCollection:
 
     js_requires = ("colorpicker.js",)
 
-    @element(sub_tags="",
-             _meta={"webcomponent": True, "render_tag": "gnr-colorpicker"})
+    @webcomponent()
     def colorpicker(self):
         """A color picker custom element; ``value`` rides the pointer."""
