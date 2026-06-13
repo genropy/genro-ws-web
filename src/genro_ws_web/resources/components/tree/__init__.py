@@ -61,8 +61,12 @@ class TreeCollection:
         if registry is None:
             registry = {}
             setattr(self, TREE_CFG_ATTR, registry)
-        registry[wid] = cfg
         box = pane.div(class_="gnr-tree")
+        # The registry key is the STORE ROOT (segmentless): branch
+        # bodies resolve their tree by the expansion anchor — every
+        # row anchor lives UNDER its store root, whatever the depth.
+        store_key = box.abs_datapath(store).split(".", 1)[1]
+        registry[store_key] = cfg
         box.tree_branch(iterate=store, id=f"tree_{wid}")
         return box
 
@@ -71,7 +75,9 @@ class TreeCollection:
         """ONE row of the tree, recursive: a Bag-valued row plants the
         next level over its own value (``iterate="^."``); a leaf row
         iterates None and closes the recursion."""
-        cfg = self._tree_cfg_current
+        # The expansion anchor (the row's store path) sits on the
+        # wrapper node: it names which tree this branch belongs to.
+        cfg = self._tree_cfg_for(root.parent_node.attr.get("datapath"))
         # The row KIND rides the datum: ``file_ext`` becomes a class
         # (gnr-ext-directory, gnr-ext-py, ...) via the template idiom —
         # folders and leaves style apart semantically, no DOM probing.
@@ -97,12 +103,16 @@ class TreeCollection:
                      class_="gnr-tree-caption", **caption_kw)
         row.tree_branch(iterate="^.")
 
-    @property
-    def _tree_cfg_current(self) -> dict:
-        """The config of the LAST declared tree (v1: one tree per page
-        renders correctly; per-wid access from the body is a v2
-        refinement of the expansion's coordinate vocabulary)."""
+    def _tree_cfg_for(self, anchor: str) -> dict:
+        """The tree config owning ``anchor``: the longest registered
+        store root the anchor lives under. N trees per page, each
+        branch finds its own."""
         registry = getattr(self, TREE_CFG_ATTR, {})
-        if registry:
-            return next(reversed(registry.values()))
-        return {"label_attribute": "caption", "selected_path": None}
+        best = None
+        for store_key, cfg in registry.items():
+            if anchor == store_key or anchor.startswith(store_key + "."):
+                if best is None or len(store_key) > len(best[0]):
+                    best = (store_key, cfg)
+        if best is not None:
+            return best[1]
+        raise KeyError(f"no tree registered for anchor {anchor!r}")

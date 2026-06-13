@@ -106,6 +106,10 @@ class WsLiveApp(AsgiApplication):
                 if not getattr(entry[1], "requires_db", False)
             }
         self.pages = pages
+        # Live builders by "<connection id>:<page key>" — the
+        # inspector's window on EVERY mounted page, any connection.
+        # Demo grade: entries outlive closed sockets until a refresh.
+        self.live_pages: dict[str, Any] = {}
         self.loop: asyncio.AbstractEventLoop | None = None
         # Cache-buster for the client resources: changes at every
         # process start, so a restarted server never serves a page
@@ -317,6 +321,7 @@ class WsLiveApp(AsgiApplication):
         handler = BuilderHandler(application=self)
         handler.add_builder(builder)
         handler.activate()
+        self.live_pages[f"{id(connection):x}:{key}"] = builder
         return builder
 
     def _live_builder(self, key: str, ws: Any) -> Any:
