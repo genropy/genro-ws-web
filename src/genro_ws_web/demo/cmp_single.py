@@ -44,7 +44,7 @@ class Page(WsLivePage):
                        html_type="number")
         pane.fieldRow(label="Height", value="^.height", dtype="L",
                        html_type="number")
-        pane.data_formula(destination=".area", func="box_area",
+        pane.dataFormula(destination=".area", func="box_area",
                           width="^.width", height="^.height",
                           _on_start=True)
         out = pane.p(padding="8px", background="#f0f4f8")

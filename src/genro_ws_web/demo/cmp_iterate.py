@@ -48,7 +48,7 @@ class Page(WsLivePage):
             head.th(caption, text_align="left", padding="4px 10px",
                     border_bottom="2px solid #c8c8c8")
         table.stateRow(iterate="^states")
-        pane.data_formula(destination="total", func="total_population",
+        pane.dataFormula(destination="total", func="total_population",
                           states="^states", _on_start=True)
         out = pane.p(padding="8px", background="#f0f4f8")
         out.span("Total population: ${total}", total="^total")

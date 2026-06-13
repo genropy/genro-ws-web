@@ -62,9 +62,9 @@ class Page(WsLivePage, HtmlComponentsBase):
         pane.labeledField(label="Favorite color", kind="colorpicker",
                            value="^.color", border=False)
         # Derived data: age from the birth date, BMI from weight/height.
-        pane.data_formula(destination=".age", func="age_from_born",
+        pane.dataFormula(destination=".age", func="age_from_born",
                           born="^.born", _on_start=True)
-        pane.data_formula(destination=".bmi", func="body_mass_index",
+        pane.dataFormula(destination=".bmi", func="body_mass_index",
                           weight="^.weight", height="^.height",
                           _on_start=True)
         summary = pane.p(style_border_left="^.color",

@@ -8,7 +8,7 @@ row's path (attributes riding), ``dblclick_fire`` is the gnride verb
 — a double click on a FILE opens an editor tab: the controller reads
 the row by the fired path, registers the tab, and the single iframe
 (CodeMirror via the ``codefile`` route, mode by extension) follows
-``editor.src`` through a data_formula. The tab strip is a store-backed
+``editor.src`` through a dataFormula. The tab strip is a store-backed
 iterate; the active tab highlight rides ``data-selectable``.
 """
 
@@ -97,7 +97,7 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
                         font_size="0.85em")
         info.span("^.current.path?rel_path", color="#2c5f8a",
                   font_family="monospace")
-        pane.data_controller(func="open_file", trigger="^.open_file")
+        pane.dataController(func="open_file", trigger="^.open_file")
 
         center = bc.div(region="center", overflow="auto", padding="8px")
         editor = center.div(datapath="editor", height="100%")

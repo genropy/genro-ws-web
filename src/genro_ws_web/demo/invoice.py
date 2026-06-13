@@ -16,7 +16,7 @@ are rules of MUTATION:
 The +/− buttons are PAGE COMMANDS — the fire lane of the wire: the
 click sends only the element id, the server node declares the fired
 path (and, for the per-row "−", the message: the row label, baked at
-expansion). A data_controller bound to the fired path performs the
+expansion). A dataController bound to the fired path performs the
 STRUCTURAL store op; the iterate block re-renders because the store
 changed. Layout: a CSS grid in the legacy-grid look (one column
 template shared by header and rows — classes in ws_live.css).
@@ -66,9 +66,9 @@ class Page(WsLivePage):
                         **{"data-fire-pointer": "commands.del_row",
                            "data-fire-value": node_label})
         # Row rules: mutation-only (the loaded document is trusted).
-        row.data_formula(destination=".total", func="row_total",
+        row.dataFormula(destination=".total", func="row_total",
                          qty="^.qty", price="^.price")
-        row.data_formula(destination=".converted", func="convert",
+        row.dataFormula(destination=".converted", func="convert",
                          total="^.total", rate="^header.rate")
 
     def setup(self, data):
@@ -121,12 +121,12 @@ class Page(WsLivePage):
         foot.div("^grand.total", class_="gnr-grid-cell gnr-grid-num")
         foot.div("^grand.converted", class_="gnr-grid-cell gnr-grid-num")
         foot.div(class_="gnr-grid-cell")
-        pane.data_controller(func="add_row", trigger="^commands.add_row")
-        pane.data_controller(func="ins_row", label="^commands.ins_row")
-        pane.data_controller(func="del_row", label="^commands.del_row")
-        pane.data_formula(destination="grand.total", func="grand_total",
+        pane.dataController(func="add_row", trigger="^commands.add_row")
+        pane.dataController(func="ins_row", label="^commands.ins_row")
+        pane.dataController(func="del_row", label="^commands.del_row")
+        pane.dataFormula(destination="grand.total", func="grand_total",
                           rows="^rows", _on_start=True)
-        pane.data_formula(destination="grand.converted",
+        pane.dataFormula(destination="grand.converted",
                           func="grand_converted", rows="^rows",
                           _on_start=True)
 

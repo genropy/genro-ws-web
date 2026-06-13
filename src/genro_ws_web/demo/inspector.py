@@ -99,8 +99,8 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
         pane.tree(wid="insp_pages", store="^.pages",
                   label_attribute="caption",
                   selected_path="insp.page_sel")
-        pane.data_controller(func="insp_refresh", trigger="^.refresh")
-        pane.data_controller(func="insp_load", trigger="^.page_sel")
+        pane.dataController(func="insp_refresh", trigger="^.refresh")
+        pane.dataController(func="insp_load", trigger="^.page_sel")
 
         center = bc.div(region="center", overflow="auto", padding="8px")
         insp = center.div(datapath="insp", height="100%")

@@ -57,9 +57,9 @@ class ScaleGridPage(WsLivePage):
         row.div("^.total", class_="gnr-grid-cell gnr-grid-num")
         row.div("^.converted", class_="gnr-grid-cell gnr-grid-num",
                 color="#2c5f8a")
-        row.data_formula(destination=".total", func="row_total",
+        row.dataFormula(destination=".total", func="row_total",
                          qty="^.qty", price="^.price")
-        row.data_formula(destination=".converted", func="convert",
+        row.dataFormula(destination=".converted", func="convert",
                          total="^.total", rate="^header.rate")
 
     def setup(self, data):
@@ -125,17 +125,17 @@ class ScaleGridPage(WsLivePage):
         foot.div(class_="gnr-grid-cell")
         foot.div("^grand.total", class_="gnr-grid-cell gnr-grid-num")
         foot.div("^grand.converted", class_="gnr-grid-cell gnr-grid-num")
-        pane.data_controller(func="add_row", trigger="^commands.add_row",
+        pane.dataController(func="add_row", trigger="^commands.add_row",
                              label="=selection.row")
-        pane.data_controller(func="ins_row", label="^commands.ins_row")
-        pane.data_controller(func="del_row", label="^commands.del_row")
-        pane.data_controller(func="select_row", selected="^selection.row")
-        pane.data_controller(func="del_selected",
+        pane.dataController(func="ins_row", label="^commands.ins_row")
+        pane.dataController(func="del_row", label="^commands.del_row")
+        pane.dataController(func="select_row", selected="^selection.row")
+        pane.dataController(func="del_selected",
                              trigger="^commands.del_selected",
                              label="=selection.row")
-        pane.data_formula(destination="grand.total", func="grand_total",
+        pane.dataFormula(destination="grand.total", func="grand_total",
                           rows="^rows", _on_start=True)
-        pane.data_formula(destination="grand.converted",
+        pane.dataFormula(destination="grand.converted",
                           func="grand_converted", rows="^rows",
                           _on_start=True)
 

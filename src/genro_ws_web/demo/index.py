@@ -51,7 +51,7 @@ class Page(WsLivePage, TreeCollection, HtmlContainersBase):
                   dblclick_fire="shell.open_page")
         pane.p("double click opens a page", font_size="0.8em",
                color="#888888")
-        pane.data_controller(func="open_page", trigger="^.open_page")
+        pane.dataController(func="open_page", trigger="^.open_page")
 
         center = bc.div(region="center", overflow="auto", padding="8px")
         shell = center.div(datapath="shell", height="100%")

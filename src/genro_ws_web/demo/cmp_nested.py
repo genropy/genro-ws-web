@@ -47,7 +47,7 @@ class Page(WsLivePage):
         pane.titledField(title="Distance (km)", value="^.km", dtype="L")
         pane.titledField(title="Fuel (liters)", value="^.liters",
                           dtype="N")
-        pane.data_formula(destination=".consumption", func="consumption",
+        pane.dataFormula(destination=".consumption", func="consumption",
                           km="^.km", liters="^.liters", _on_start=True)
         out = pane.p(padding="8px", background="#f0f4f8")
         out.span("${km} km with ${liters} l = ${consumption} km/l",

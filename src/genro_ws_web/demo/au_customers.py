@@ -148,14 +148,14 @@ class Page(WsLivePage):
                        **{"data-fire-pointer": "commands.cancel_customer"})
         # The state click re-parameterizes the anchor: one attribute
         # write, and the lazy component re-renders — re-query included.
-        pane.data_controller(func="set_state", state="^selection.state")
-        pane.data_controller(func="edit_customer",
+        pane.dataController(func="set_state", state="^selection.state")
+        pane.dataController(func="edit_customer",
                              pkey="^commands.edit_customer")
-        pane.data_controller(
+        pane.dataController(
             func="save_customer", trigger="^commands.save_customer",
             pkey="=dialog.pkey",
             **{field: f"=dialog.customer.{field}" for field in _FIELDS})
-        pane.data_controller(func="cancel_customer",
+        pane.dataController(func="cancel_customer",
                              trigger="^commands.cancel_customer")
 
     @staticmethod

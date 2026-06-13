@@ -65,9 +65,7 @@ class HtmlContainersBase:
     # border container — grid with named areas, regions on the children
     # ------------------------------------------------------------------
 
-    # Explicit dispatch name: the legacy prefix-strip rule would turn
-    # the compound name into "container" (a collision).
-    @container("borderContainer")
+    @container
     def borderContainer(self, pane, design="headline", **attrs):
         """``design`` is the legacy pair: ``headline`` (top/bottom span
         the full width) or ``sidebar`` (left/right span the full
@@ -89,7 +87,7 @@ class HtmlContainersBase:
     # tab container — selected in data, click is a mutation, CSS shows
     # ------------------------------------------------------------------
 
-    @container("tabContainer")
+    @container
     def tabContainer(self, pane, selected=None, selected_page=None,
                       tabs_position="top", **attrs):
         """The shell: tab strip + panes. The LEGACY pair:
@@ -135,14 +133,14 @@ class HtmlContainersBase:
         page_key_path = outer.abs_datapath(selected_page).split(".", 1)[1]
         # The close lane: one controller per container, fired by the
         # tab ✕ with the page key as the message.
-        outer.data_controller(
+        outer.dataController(
             func="gnr_tab_close", trigger=f"^_tabs.{token}.close",
             token=token, page_key_path=page_key_path,
         )
         if selected is not None:
             # Legacy ``selected``: the INDEX of the selected page,
             # derived from the key (and re-derived when tabs close).
-            outer.data_controller(
+            outer.dataController(
                 func="gnr_tab_index", trigger=selected_page,
                 token=token,
                 dest=outer.abs_datapath(selected).split(".", 1)[1],

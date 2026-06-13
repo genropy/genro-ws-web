@@ -58,7 +58,7 @@ class Page(WsLivePage):
                "stores. Every input addresses its own row, two levels "
                "deep.")
         pane.regionBlock(iterate="^regions")
-        pane.data_formula(destination="total", func="grand_total",
+        pane.dataFormula(destination="total", func="grand_total",
                           regions="^regions", _on_start=True)
         out = pane.p(padding="8px", background="#f0f4f8")
         out.span("Grand total: ${total}", total="^total")
